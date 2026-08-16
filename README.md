@@ -10,15 +10,12 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 
 ## KEY FEATURES
 
-- **NTP endpoint support**: Test an IP address, host name, or URL, with UDP port `123` used by default.
+- **NTP endpoint support**: Test an IP address or host name with a configurable UDP port `123` used by default.
 - **Configurable test duration**: Run tests from 1 to 300 seconds.
 - **Concurrent requests**: Uses from 1 to 100 concurrent workers to exercise the selected NTP server.
 - **Run a single or multiple tests**: Run a single test for a specified concurrency and duration, or automatically run multiple tests from concurrency 1 to 100, each for a specified duration.
 - **Live results**: View total requests, requests per second, successful requests, failed requests, and remaining time while the test runs.
 -  **Save results to a report**: Save results to a report (.pdf format).
-
-
-
 
 ## GETTING STARTED
 
@@ -42,7 +39,7 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 
 **Options 1 and 2 (continued):**
 
-3. Enter the hostname or IP address of an NTP server that you're authorized to test
+3. Enter the host name or IP address of an NTP server that you're authorized to test
    
 4. Specify a port if it differs from the default NTP port (`123`)
    
