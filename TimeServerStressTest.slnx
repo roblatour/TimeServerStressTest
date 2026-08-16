@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TimeServerStressTest.Tests/TimeServerStressTest.Tests.csproj" />
+  <Project Path="TimeServerStressTest/TimeServerStressTest.csproj" />
+</Solution>

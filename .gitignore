@@ -1,0 +1,25 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# Zencoder
+.zencoder/
+**/.zencoder/
+
+# auto release update files
+Release/
+Release.bat
+ReleaseNotes.txt
+Releases.md
+
