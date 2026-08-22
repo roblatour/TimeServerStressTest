@@ -15,7 +15,7 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 - **Concurrent requests**: Uses from 1 to 100 concurrent workers to exercise the selected NTP server.
 - **Run test**: Run a single test (one NTP request), a single stress test of multiple NTP requests for a specified duration involving a specified number of concurrent (running in parallel) tests, or automatically run multiple stress tests from concurrency 0 to 100, each for a specified duration.
 - **Live results**: View total requests, requests per second, successful requests, failed requests, and remaining time while the test runs.
--  **Save results to a report**: Save results to a [report](misc/sample_report.pdf) (.pdf format).
+-  **Save results to a report**: Save results to a [report](Misc/sample_report.pdf) (.pdf format).
 
 ## GETTING STARTED
 
