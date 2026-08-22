@@ -12,6 +12,8 @@ public sealed class NtpEndpointTests
     [DataRow("ntp://time.example.com", "time.example.com", 123)]
     [DataRow("https://time.example.com:9123/status", "time.example.com", 9123)]
     [DataRow("time.example.com:8123", "time.example.com", 8123)]
+    [DataRow("2001:db8::1", "2001:DB8::1", 123)]
+    [DataRow("[2001:db8::1]", "2001:DB8::1", 123)]
     public void TryParse_ValidAddress_ReturnsEndpoint(string value, string expectedHost, int expectedPort)
     {
         var parsed = NtpEndpoint.TryParse(value, out var endpoint);
@@ -165,6 +167,28 @@ public sealed class NtpStressRunnerTests
     }
 
     [TestMethod]
+    public async Task RunAsync_SingleRequestTimeoutCountsAsFailure()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var receiveTask = server.ReceiveAsync();
+        var endpoint = new NtpEndpoint(IPAddress.Loopback.ToString(), ((IPEndPoint)server.Client.LocalEndPoint!).Port);
+
+        var snapshot = await new NtpStressRunner().RunAsync(
+            endpoint,
+            TimeSpan.FromSeconds(2),
+            1,
+            1,
+            new Progress<StressSnapshot>(),
+            CancellationToken.None);
+
+        await receiveTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.AreEqual(1, snapshot.TotalRequests);
+        Assert.AreEqual(0, snapshot.SuccessfulRequests);
+        Assert.AreEqual(1, snapshot.FailedRequests);
+    }
+
+    [TestMethod]
     public async Task RunAsync_RejectsInvalidNtpResponse()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
@@ -187,6 +211,31 @@ public sealed class NtpStressRunnerTests
 
         Assert.AreEqual(0, snapshot.SuccessfulRequests);
         Assert.AreEqual(1, snapshot.FailedRequests);
+    }
+
+    [TestMethod]
+    public async Task RunAsync_ZeroWorkersUsesOneWorker()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var responseTask = Task.Run(async () =>
+        {
+            var request = await server.ReceiveAsync();
+            await server.SendAsync(CreateNtpServerResponse(), request.RemoteEndPoint);
+        });
+
+        var endpoint = new NtpEndpoint(IPAddress.Loopback.ToString(), ((IPEndPoint)server.Client.LocalEndPoint!).Port);
+        var snapshot = await new NtpStressRunner().RunAsync(
+            endpoint,
+            TimeSpan.FromSeconds(2),
+            0,
+            1,
+            new Progress<StressSnapshot>(),
+            CancellationToken.None);
+
+        await responseTask;
+
+        Assert.AreEqual(1, snapshot.TotalRequests);
+        Assert.AreEqual(1, snapshot.SuccessfulRequests);
     }
 
     [TestMethod]

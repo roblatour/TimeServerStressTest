@@ -21,6 +21,7 @@ public partial class Form1 : Form
         ConfigureCurrentTestStatistics();
         ConfigureResultsTable();
         Text = GetWindowTitle();
+        serverAddressTextBox.Items.AddRange(UserPreferences.LoadServerAddresses().Cast<object>().ToArray());
         serverAddressTextBox.Text = UserPreferences.LoadServerAddress();
         ntpPortNumericUpDown.Value = UserPreferences.LoadNtpPort();
         concurrentTestsNumericUpDown.Value = UserPreferences.LoadConcurrentTests();
@@ -65,17 +66,22 @@ public partial class Form1 : Form
         return $"{title} v{version} - {copyright} - {license}";
     }
 
+    private async void SingleTestButton_Click(object? sender, EventArgs e)
+    {
+        await StartWorkflowAsync(isMultiTest: false, singleRequest: true);
+    }
+
     private async void StartButton_Click(object? sender, EventArgs e)
     {
-        await StartWorkflowAsync(isMultiTest: false);
+        await StartWorkflowAsync(isMultiTest: false, singleRequest: false);
     }
 
     private async void MultiTestButton_Click(object? sender, EventArgs e)
     {
-        await StartWorkflowAsync(isMultiTest: true);
+        await StartWorkflowAsync(isMultiTest: true, singleRequest: false);
     }
 
-    private async Task StartWorkflowAsync(bool isMultiTest)
+    private async Task StartWorkflowAsync(bool isMultiTest, bool singleRequest)
     {
         if (!NtpEndpoint.TryParse(serverAddressTextBox.Text, (int)ntpPortNumericUpDown.Value, out var endpoint))
         {
@@ -84,12 +90,21 @@ public partial class Form1 : Form
             return;
         }
 
-        if (!ConfirmStressTest())
+        if (endpoint is not null && endpoint.Host.Contains(':'))
         {
-            return;
+            serverAddressTextBox.Text = endpoint.Host;
         }
 
-        testDurationSeconds = (int)durationNumericUpDown.Value;
+        if (isMultiTest)
+        {
+            if (!ConfirmStressTest())
+            {
+                return;
+            }
+        }
+
+        AddServerAddressToHistory(serverAddressTextBox.Text);
+        testDurationSeconds = singleRequest ? 2 : (int)durationNumericUpDown.Value;
         var singleTestWorkers = (int)concurrentTestsNumericUpDown.Value;
         workflowStarted = null;
         workflowEnded = null;
@@ -107,17 +122,19 @@ public partial class Form1 : Form
         {
 
 
+            var firstWorkers = isMultiTest ? 0 : singleTestWorkers;
             var maximumWorkers = isMultiTest ? NtpStressRunner.MaximumConcurrentWorkers : singleTestWorkers;
-            long maximumRequests = 0;
+            var maximumRequests = singleRequest ? 1 : 0;
+            var duration = singleRequest ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(testDurationSeconds);
             var testEnded = DateTime.Now;
-            for (var workers = isMultiTest ? 1 : singleTestWorkers; workers <= maximumWorkers; workers++)
+            for (var workers = firstWorkers; workers <= maximumWorkers; workers++)
             {
                 if (testCancellation.IsCancellationRequested)
                 {
                     break;
                 }
 
-                var result = await RunTestAsync(endpoint!, workers, maximumRequests);
+                var result = await RunTestAsync(endpoint!, workers, duration, maximumRequests);
                 workflowResults.Add(result);
                 testEnded = result.Ended;
                 RefreshWorkflowResults();
@@ -158,7 +175,7 @@ public partial class Form1 : Form
         }
     }
 
-    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, long maximumRequests)
+    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, TimeSpan duration, long maximumRequests)
     {
         ResetResults();
         var testStarted = DateTime.Now;
@@ -170,7 +187,7 @@ public partial class Form1 : Form
         var progress = new Progress<StressSnapshot>(UpdateResults);
         var snapshot = await Task.Run(() => new NtpStressRunner().RunAsync(
             endpoint,
-            TimeSpan.FromSeconds(testDurationSeconds),
+            duration,
             workers,
             maximumRequests,
             progress,
@@ -259,6 +276,35 @@ public partial class Form1 : Form
         return confirmed;
     }
 
+    private void AddServerAddressToHistory(string serverAddress)
+    {
+        var value = serverAddress.Trim();
+        if (value.Length == 0 || serverAddressTextBox.Items.Cast<string>().Any(item => string.Equals(item, value, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        if (serverAddressTextBox.Items.Count == 15)
+        {
+            serverAddressTextBox.Items.RemoveAt(serverAddressTextBox.Items.Count - 1);
+        }
+
+        serverAddressTextBox.Items.Add(value);
+    }
+
+    private void ServerAddressComboBox_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Delete || serverAddressTextBox.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        serverAddressTextBox.Items.RemoveAt(serverAddressTextBox.SelectedIndex);
+        serverAddressTextBox.Text = string.Empty;
+        e.Handled = true;
+        e.SuppressKeyPress = true;
+    }
+
     private void StopButton_Click(object? sender, EventArgs e)
     {
         stopButton.Enabled = false;
@@ -269,6 +315,7 @@ public partial class Form1 : Form
     {
         UserPreferences.Save(
             serverAddressTextBox.Text,
+            serverAddressTextBox.Items.Cast<string>(),
             (int)ntpPortNumericUpDown.Value,
             (int)concurrentTestsNumericUpDown.Value,
             (int)durationNumericUpDown.Value);
@@ -432,6 +479,7 @@ public partial class Form1 : Form
         ntpPortNumericUpDown.Enabled = !isRunning;
         durationNumericUpDown.Enabled = !isRunning;
         concurrentTestsNumericUpDown.Enabled = !isRunning;
+        button1.Enabled = !isRunning;
         startButton.Enabled = !isRunning;
         multiTestButton.Enabled = !isRunning;
         stopButton.Enabled = isRunning;
@@ -446,5 +494,10 @@ public partial class Form1 : Form
     private void closeButton_Click(object sender, EventArgs e)
     {
         this.Close();
+    }
+
+    private void groupBox7_Enter(object sender, EventArgs e)
+    {
+
     }
 }

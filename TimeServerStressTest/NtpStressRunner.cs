@@ -23,7 +23,7 @@ public sealed record NtpEndpoint(string Host, int Port)
             return false;
         }
 
-        endpoint = new NtpEndpoint(uri.Host, port);
+        endpoint = new NtpEndpoint(NormalizeHost(uri.Host), port);
         return true;
     }
 
@@ -36,7 +36,7 @@ public sealed record NtpEndpoint(string Host, int Port)
             return false;
         }
 
-        endpoint = new NtpEndpoint(uri.Host, port);
+        endpoint = new NtpEndpoint(NormalizeHost(uri.Host), port);
         return true;
     }
 
@@ -50,6 +50,13 @@ public sealed record NtpEndpoint(string Host, int Port)
         }
 
         var input = value.Trim();
+        if (IPAddress.TryParse(input.Trim('[', ']'), out var address))
+        {
+            var host = address.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{address}]" : address.ToString();
+            uri = new Uri($"ntp://{host}");
+            return true;
+        }
+
         if (!input.Contains("://", StringComparison.Ordinal))
         {
             input = $"ntp://{input}";
@@ -63,6 +70,14 @@ public sealed record NtpEndpoint(string Host, int Port)
 
         return false;
     }
+
+    private static string NormalizeHost(string host)
+    {
+        var normalizedHost = host.Trim('[', ']');
+        return IPAddress.TryParse(normalizedHost, out var address) && address.AddressFamily == AddressFamily.InterNetworkV6
+            ? address.ToString().ToUpperInvariant()
+            : normalizedHost;
+    }
 }
 
 public sealed record StressSnapshot(long TotalRequests, long RequestsPerSecond, long SuccessfulRequests, long FailedRequests, TimeSpan Remaining, TimeSpan Elapsed = default);
@@ -75,10 +90,13 @@ public sealed class NtpStressRunner
     public async Task<StressSnapshot> RunAsync(NtpEndpoint endpoint, TimeSpan duration, int concurrentWorkers, long maximumRequests, IProgress<StressSnapshot> progress, CancellationToken cancellationToken)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(duration, TimeSpan.Zero);
-        ArgumentOutOfRangeException.ThrowIfLessThan(concurrentWorkers, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(concurrentWorkers, 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(concurrentWorkers, MaximumConcurrentWorkers);
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumRequests, 0);
-        var addresses = await Dns.GetHostAddressesAsync(endpoint.Host, cancellationToken).ConfigureAwait(false);
+        var effectiveWorkers = Math.Max(concurrentWorkers, 1);
+        var addresses = IPAddress.TryParse(endpoint.Host, out var parsedAddress)
+            ? [parsedAddress]
+            : await Dns.GetHostAddressesAsync(endpoint.Host, cancellationToken).ConfigureAwait(false);
         var address = addresses.FirstOrDefault(candidate => candidate.AddressFamily == AddressFamily.InterNetwork) ?? addresses.FirstOrDefault();
         if (address is null)
         {
@@ -94,7 +112,7 @@ public sealed class NtpStressRunner
         using var durationCancellation = new CancellationTokenSource(duration);
         using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, durationCancellation.Token);
         var startWorkers = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var workers = Enumerable.Range(0, concurrentWorkers)
+        var workers = Enumerable.Range(0, effectiveWorkers)
             .Select(_ => Task.Run(RunWorkerAsync))
             .ToArray();
         var monitor = ReportProgressAsync();

@@ -130,7 +130,7 @@ public sealed class ResultsChart : Control
                 plot,
                 barWidth);
 
-            if (!useSparseWorkerLabels || results.Count == 1 || result.Workers is 1 or 2 || result.Workers % 2 == 0)
+            if (!useSparseWorkerLabels || results.Count == 1 || result.Workers % 2 == 0)
             {
                 var label = result.Workers.ToString("N0");
                 var labelSize = graphics.MeasureString(label, Font);

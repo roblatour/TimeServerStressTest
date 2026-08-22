@@ -5,7 +5,7 @@ partial class Form1
     private System.ComponentModel.IContainer components = null;
     private Panel contentPanel = null!;
     private Label serverAddressLabel = null!;
-    private TextBox serverAddressTextBox = null!;
+    private ComboBox serverAddressTextBox = null!;
     private Label ntpPortLabel = null!;
     private NumericUpDown ntpPortNumericUpDown = null!;
     private Label durationLabel = null!;
@@ -51,10 +51,11 @@ partial class Form1
         createReportButton = new Button();
         groupBox4 = new GroupBox();
         serverAddressLabel = new Label();
-        serverAddressTextBox = new TextBox();
+        serverAddressTextBox = new ComboBox();
         ntpPortNumericUpDown = new NumericUpDown();
         ntpPortLabel = new Label();
         groupBox3 = new GroupBox();
+        groupBox7 = new GroupBox();
         groupBox2 = new GroupBox();
         label1 = new Label();
         multiTestButton = new Button();
@@ -62,15 +63,17 @@ partial class Form1
         startButton = new Button();
         concurrentTestsNumericUpDown = new NumericUpDown();
         concurrentTestsLabel = new Label();
-        stopButton = new Button();
         durationLabel = new Label();
         durationNumericUpDown = new NumericUpDown();
+        groupBox6 = new GroupBox();
+        button1 = new Button();
         closeButton = new Button();
         helpButton = new Button();
         resultsGroupBox = new GroupBox();
         totalRequestsTitleLabel = new Label();
         requestsPerSecondTitleLabel = new Label();
         successfulRequestsTitleLabel = new Label();
+        stopButton = new Button();
         failedRequestsTitleLabel = new Label();
         totalRequestsValueLabel = new Label();
         requestsPerSecondValueLabel = new Label();
@@ -88,10 +91,12 @@ partial class Form1
         groupBox4.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).BeginInit();
         groupBox3.SuspendLayout();
+        groupBox7.SuspendLayout();
         groupBox2.SuspendLayout();
         groupBox1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).BeginInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).BeginInit();
+        groupBox6.SuspendLayout();
         resultsGroupBox.SuspendLayout();
         chartGroupBox.SuspendLayout();
         summaryGroupBox.SuspendLayout();
@@ -119,9 +124,9 @@ partial class Form1
         // groupBox5
         // 
         groupBox5.Controls.Add(createReportButton);
-        groupBox5.Location = new Point(844, 12);
+        groupBox5.Location = new Point(918, 12);
         groupBox5.Name = "groupBox5";
-        groupBox5.Size = new Size(230, 87);
+        groupBox5.Size = new Size(155, 168);
         groupBox5.TabIndex = 22;
         groupBox5.TabStop = false;
         groupBox5.Text = "Create Report";
@@ -130,7 +135,7 @@ partial class Form1
         // 
         createReportButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         createReportButton.Enabled = false;
-        createReportButton.Location = new Point(55, 39);
+        createReportButton.Location = new Point(16, 117);
         createReportButton.Name = "createReportButton";
         createReportButton.Size = new Size(120, 30);
         createReportButton.TabIndex = 16;
@@ -146,7 +151,7 @@ partial class Form1
         groupBox4.Controls.Add(ntpPortLabel);
         groupBox4.Location = new Point(27, 12);
         groupBox4.Name = "groupBox4";
-        groupBox4.Size = new Size(230, 147);
+        groupBox4.Size = new Size(230, 168);
         groupBox4.TabIndex = 21;
         groupBox4.TabStop = false;
         groupBox4.Text = "Time Server Identification";
@@ -162,11 +167,13 @@ partial class Form1
         // 
         // serverAddressTextBox
         // 
+        serverAddressTextBox.FormattingEnabled = true;
         serverAddressTextBox.Location = new Point(15, 46);
         serverAddressTextBox.Name = "serverAddressTextBox";
-        serverAddressTextBox.PlaceholderText = "Host name or IP address";
         serverAddressTextBox.Size = new Size(200, 23);
+        serverAddressTextBox.Sorted = true;
         serverAddressTextBox.TabIndex = 1;
+        serverAddressTextBox.KeyDown += ServerAddressComboBox_KeyDown;
         // 
         // ntpPortNumericUpDown
         // 
@@ -174,7 +181,7 @@ partial class Form1
         ntpPortNumericUpDown.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
         ntpPortNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
         ntpPortNumericUpDown.Name = "ntpPortNumericUpDown";
-        ntpPortNumericUpDown.Size = new Size(120, 23);
+        ntpPortNumericUpDown.Size = new Size(90, 23);
         ntpPortNumericUpDown.TabIndex = 3;
         ntpPortNumericUpDown.Value = new decimal(new int[] { 123, 0, 0, 0 });
         // 
@@ -189,28 +196,38 @@ partial class Form1
         // 
         // groupBox3
         // 
-        groupBox3.Controls.Add(groupBox2);
-        groupBox3.Controls.Add(groupBox1);
-        groupBox3.Controls.Add(stopButton);
-        groupBox3.Controls.Add(durationLabel);
-        groupBox3.Controls.Add(durationNumericUpDown);
-        groupBox3.Location = new Point(295, 12);
+        groupBox3.Controls.Add(groupBox7);
+        groupBox3.Controls.Add(groupBox6);
+        groupBox3.Location = new Point(271, 12);
         groupBox3.Name = "groupBox3";
-        groupBox3.Size = new Size(511, 208);
+        groupBox3.Size = new Size(633, 168);
         groupBox3.TabIndex = 20;
         groupBox3.TabStop = false;
-        groupBox3.Text = "Testing";
+        // 
+        // groupBox7
+        // 
+        groupBox7.Controls.Add(groupBox2);
+        groupBox7.Controls.Add(groupBox1);
+        groupBox7.Controls.Add(durationLabel);
+        groupBox7.Controls.Add(durationNumericUpDown);
+        groupBox7.Location = new Point(137, 14);
+        groupBox7.Name = "groupBox7";
+        groupBox7.Size = new Size(490, 148);
+        groupBox7.TabIndex = 21;
+        groupBox7.TabStop = false;
+        groupBox7.Text = "Stress Testing";
+        groupBox7.Enter += groupBox7_Enter;
         // 
         // groupBox2
         // 
         groupBox2.Controls.Add(label1);
         groupBox2.Controls.Add(multiTestButton);
-        groupBox2.Location = new Point(266, 57);
+        groupBox2.Location = new Point(246, 44);
         groupBox2.Name = "groupBox2";
-        groupBox2.Size = new Size(225, 100);
+        groupBox2.Size = new Size(230, 100);
         groupBox2.TabIndex = 19;
         groupBox2.TabStop = false;
-        groupBox2.Text = "Multi Test";
+        groupBox2.Text = "Multi Stress Test";
         // 
         // label1
         // 
@@ -219,16 +236,16 @@ partial class Form1
         label1.Name = "label1";
         label1.Size = new Size(158, 15);
         label1.TabIndex = 10;
-        label1.Text = "Concurrent Requests: 1 - 100";
+        label1.Text = "Concurrent Requests: 0 - 100";
         // 
         // multiTestButton
         // 
         multiTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        multiTestButton.Location = new Point(6, 60);
+        multiTestButton.Location = new Point(10, 60);
         multiTestButton.Name = "multiTestButton";
         multiTestButton.Size = new Size(200, 30);
         multiTestButton.TabIndex = 9;
-        multiTestButton.Text = "Start multiple tests";
+        multiTestButton.Text = "Start multiple stress tests";
         multiTestButton.UseVisualStyleBackColor = true;
         multiTestButton.Click += MultiTestButton_Click;
         // 
@@ -237,12 +254,12 @@ partial class Form1
         groupBox1.Controls.Add(startButton);
         groupBox1.Controls.Add(concurrentTestsNumericUpDown);
         groupBox1.Controls.Add(concurrentTestsLabel);
-        groupBox1.Location = new Point(27, 57);
+        groupBox1.Location = new Point(10, 43);
         groupBox1.Name = "groupBox1";
         groupBox1.Size = new Size(225, 100);
         groupBox1.TabIndex = 18;
         groupBox1.TabStop = false;
-        groupBox1.Text = "Single Test";
+        groupBox1.Text = "Single Stress Test";
         // 
         // startButton
         // 
@@ -251,14 +268,13 @@ partial class Form1
         startButton.Name = "startButton";
         startButton.Size = new Size(200, 30);
         startButton.TabIndex = 8;
-        startButton.Text = "Start a single test";
+        startButton.Text = "Start a single stress test";
         startButton.UseVisualStyleBackColor = true;
         startButton.Click += StartButton_Click;
         // 
         // concurrentTestsNumericUpDown
         // 
         concurrentTestsNumericUpDown.Location = new Point(133, 30);
-        concurrentTestsNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
         concurrentTestsNumericUpDown.Name = "concurrentTestsNumericUpDown";
         concurrentTestsNumericUpDown.Size = new Size(73, 23);
         concurrentTestsNumericUpDown.TabIndex = 7;
@@ -273,36 +289,45 @@ partial class Form1
         concurrentTestsLabel.TabIndex = 6;
         concurrentTestsLabel.Text = "Concurrent Requests:";
         // 
-        // stopButton
-        // 
-        stopButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        stopButton.Enabled = false;
-        stopButton.Location = new Point(27, 163);
-        stopButton.Name = "stopButton";
-        stopButton.Size = new Size(464, 30);
-        stopButton.TabIndex = 10;
-        stopButton.Text = "Stop testing";
-        stopButton.UseVisualStyleBackColor = true;
-        stopButton.Click += StopButton_Click;
-        // 
         // durationLabel
         // 
         durationLabel.AutoSize = true;
-        durationLabel.Location = new Point(27, 30);
+        durationLabel.Location = new Point(10, 22);
         durationLabel.Name = "durationLabel";
-        durationLabel.Size = new Size(133, 15);
+        durationLabel.Size = new Size(139, 15);
         durationLabel.TabIndex = 4;
-        durationLabel.Text = "Test duration (seconds):";
+        durationLabel.Text = "Test Durations (seconds):";
         // 
         // durationNumericUpDown
         // 
-        durationNumericUpDown.Location = new Point(166, 28);
+        durationNumericUpDown.Location = new Point(155, 20);
         durationNumericUpDown.Maximum = new decimal(new int[] { 300, 0, 0, 0 });
         durationNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
         durationNumericUpDown.Name = "durationNumericUpDown";
         durationNumericUpDown.Size = new Size(67, 23);
         durationNumericUpDown.TabIndex = 5;
         durationNumericUpDown.Value = new decimal(new int[] { 15, 0, 0, 0 });
+        // 
+        // groupBox6
+        // 
+        groupBox6.Controls.Add(button1);
+        groupBox6.Location = new Point(10, 14);
+        groupBox6.Name = "groupBox6";
+        groupBox6.Size = new Size(121, 148);
+        groupBox6.TabIndex = 20;
+        groupBox6.TabStop = false;
+        groupBox6.Text = "Single Test";
+        // 
+        // button1
+        // 
+        button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        button1.Location = new Point(6, 104);
+        button1.Name = "button1";
+        button1.Size = new Size(109, 30);
+        button1.TabIndex = 9;
+        button1.Text = "Start a single test";
+        button1.UseVisualStyleBackColor = true;
+        button1.Click += SingleTestButton_Click;
         // 
         // closeButton
         // 
@@ -332,6 +357,7 @@ partial class Form1
         resultsGroupBox.Controls.Add(totalRequestsTitleLabel);
         resultsGroupBox.Controls.Add(requestsPerSecondTitleLabel);
         resultsGroupBox.Controls.Add(successfulRequestsTitleLabel);
+        resultsGroupBox.Controls.Add(stopButton);
         resultsGroupBox.Controls.Add(failedRequestsTitleLabel);
         resultsGroupBox.Controls.Add(totalRequestsValueLabel);
         resultsGroupBox.Controls.Add(requestsPerSecondValueLabel);
@@ -339,9 +365,9 @@ partial class Form1
         resultsGroupBox.Controls.Add(failedRequestsValueLabel);
         resultsGroupBox.Controls.Add(remainingProgressBar);
         resultsGroupBox.Controls.Add(multiTestProgressBar);
-        resultsGroupBox.Location = new Point(24, 236);
+        resultsGroupBox.Location = new Point(27, 186);
         resultsGroupBox.Name = "resultsGroupBox";
-        resultsGroupBox.Size = new Size(1050, 170);
+        resultsGroupBox.Size = new Size(1050, 212);
         resultsGroupBox.TabIndex = 12;
         resultsGroupBox.TabStop = false;
         resultsGroupBox.Text = "Test Progress";
@@ -366,6 +392,18 @@ partial class Form1
         successfulRequestsTitleLabel.Name = "successfulRequestsTitleLabel";
         successfulRequestsTitleLabel.Size = new Size(100, 23);
         successfulRequestsTitleLabel.TabIndex = 2;
+        // 
+        // stopButton
+        // 
+        stopButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        stopButton.Enabled = false;
+        stopButton.Location = new Point(20, 167);
+        stopButton.Name = "stopButton";
+        stopButton.Size = new Size(1010, 30);
+        stopButton.TabIndex = 10;
+        stopButton.Text = "Stop testing";
+        stopButton.UseVisualStyleBackColor = true;
+        stopButton.Click += StopButton_Click;
         // 
         // failedRequestsTitleLabel
         // 
@@ -497,13 +535,15 @@ partial class Form1
         groupBox4.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).EndInit();
         groupBox3.ResumeLayout(false);
-        groupBox3.PerformLayout();
+        groupBox7.ResumeLayout(false);
+        groupBox7.PerformLayout();
         groupBox2.ResumeLayout(false);
         groupBox2.PerformLayout();
         groupBox1.ResumeLayout(false);
         groupBox1.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).EndInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).EndInit();
+        groupBox6.ResumeLayout(false);
         resultsGroupBox.ResumeLayout(false);
         chartGroupBox.ResumeLayout(false);
         summaryGroupBox.ResumeLayout(false);
@@ -542,4 +582,7 @@ partial class Form1
     private GroupBox groupBox4;
     private Label label1;
     private GroupBox groupBox5;
+    private GroupBox groupBox6;
+    private Button button1;
+    private GroupBox groupBox7;
 }

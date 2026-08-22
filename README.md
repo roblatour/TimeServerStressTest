@@ -1,4 +1,4 @@
-# Time Server Stress Test (Version 1 - 2026-08-16)
+# Time Server Stress Test (Version 1.1 - 2026-08-22)
 
 ## OVERVIEW
 
@@ -13,9 +13,9 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 - **NTP endpoint support**: Test an IP address or host name with a configurable UDP port `123` used by default.
 - **Configurable test duration**: Run tests from 1 to 300 seconds.
 - **Concurrent requests**: Uses from 1 to 100 concurrent workers to exercise the selected NTP server.
-- **Run a single or multiple tests**: Run a single test for a specified concurrency and duration, or automatically run multiple tests from concurrency 1 to 100, each for a specified duration.
+- **Run test**: Run a single test (one NTP request), a single stress test of multiple NTP requests for a specified duration involving a specified number of concurrent (running in parallel) tests, or automatically run multiple stress tests from concurrency 0 to 100, each for a specified duration.
 - **Live results**: View total requests, requests per second, successful requests, failed requests, and remaining time while the test runs.
--  **Save results to a report**: Save results to a report (.pdf format).
+-  **Save results to a report**: Save results to a [report](misc/sample_report.pdf) (.pdf format).
 
 ## GETTING STARTED
 
@@ -47,11 +47,11 @@ The application sends concurrent UDP NTP requests to a selected server for a con
    
 6. (Optionally for Single tests) Specify the number of concurrent tests that should be run (or use the default)
    
-7. Click either **Start a single test** or **Start multiple tests"** and the **Confirm** button to confirm that you are authorized to test the server
+7. Click either **Start a single test**, **Start a single stress test** or **Start multiple stress tests"** and if prompted the **Confirm** button to confirm that you are authorized to test the server
 
 8. Review the live test results, or select **Stop** to end the test early
    
-9. Optionally, click **Create Report** to create a report
+9. Optionally, click **Create Report** to create and view a report
 
 
 ## AUTHORIZED USE ONLY
