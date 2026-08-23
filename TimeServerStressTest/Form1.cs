@@ -66,17 +66,17 @@ public partial class Form1 : Form
         return $"{title} v{version} - {copyright} - {license}";
     }
 
-    private async void SingleTestButton_Click(object? sender, EventArgs e)
+    private async void StartSingleTestButton_Click(object? sender, EventArgs e)
     {
         await StartWorkflowAsync(isMultiTest: false, singleRequest: true);
     }
 
-    private async void StartButton_Click(object? sender, EventArgs e)
+    private async void StartSingleStressTestButton_Click(object? sender, EventArgs e)
     {
         await StartWorkflowAsync(isMultiTest: false, singleRequest: false);
     }
 
-    private async void MultiTestButton_Click(object? sender, EventArgs e)
+    private async void StartMultiStressTestButton_Click(object? sender, EventArgs e)
     {
         await StartWorkflowAsync(isMultiTest: true, singleRequest: false);
     }
@@ -95,7 +95,7 @@ public partial class Form1 : Form
             serverAddressTextBox.Text = endpoint.Host;
         }
 
-        if (isMultiTest)
+        if (!singleRequest)
         {
             if (!ConfirmStressTest())
             {
@@ -122,8 +122,8 @@ public partial class Form1 : Form
         {
 
 
-            var firstWorkers = isMultiTest ? 0 : singleTestWorkers;
-            var maximumWorkers = isMultiTest ? NtpStressRunner.MaximumConcurrentWorkers : singleTestWorkers;
+            var firstWorkers = isMultiTest ? 0 : singleRequest ? 0 : singleTestWorkers;
+            var maximumWorkers = isMultiTest ? NtpStressRunner.MaximumConcurrentWorkers : singleRequest ? 0 : singleTestWorkers;
             var maximumRequests = singleRequest ? 1 : 0;
             var duration = singleRequest ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(testDurationSeconds);
             var testEnded = DateTime.Now;
@@ -134,7 +134,7 @@ public partial class Form1 : Form
                     break;
                 }
 
-                var result = await RunTestAsync(endpoint!, workers, duration, maximumRequests);
+                var result = await RunTestAsync(endpoint!, workers, duration, maximumRequests, singleRequest);
                 workflowResults.Add(result);
                 testEnded = result.Ended;
                 RefreshWorkflowResults();
@@ -175,7 +175,7 @@ public partial class Form1 : Form
         }
     }
 
-    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, TimeSpan duration, long maximumRequests)
+    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, TimeSpan duration, long maximumRequests, bool singleRequest)
     {
         ResetResults();
         var testStarted = DateTime.Now;
@@ -202,7 +202,8 @@ public partial class Form1 : Form
             testStarted,
             testEnded,
             snapshot.Elapsed,
-            testCancellation!.IsCancellationRequested ? StressTestStatus.Stopped : StressTestStatus.Completed);
+            testCancellation!.IsCancellationRequested ? StressTestStatus.Stopped : StressTestStatus.Completed,
+            singleRequest);
     }
 
     private bool ConfirmStressTest()
@@ -455,7 +456,7 @@ public partial class Form1 : Form
             resultsDataGridView.Rows.Add(
                 result.Workers.ToString("N0"),
                 result.TotalRequests.ToString("N0"),
-                result.RequestsPerSecond.ToString("N2"),
+                result.IsSingleRequest ? "N/A" : result.RequestsPerSecond.ToString("N2"),
                 result.SuccessfulRequests.ToString("N0"),
                 result.FailedRequests.ToString("N0"),
                 $"{result.SuccessRate:N2}%",
@@ -479,9 +480,9 @@ public partial class Form1 : Form
         ntpPortNumericUpDown.Enabled = !isRunning;
         durationNumericUpDown.Enabled = !isRunning;
         concurrentTestsNumericUpDown.Enabled = !isRunning;
-        button1.Enabled = !isRunning;
-        startButton.Enabled = !isRunning;
-        multiTestButton.Enabled = !isRunning;
+        StartSingleTestButton.Enabled = !isRunning;
+        StartSingleStressTestButton.Enabled = !isRunning;
+        StartMultiStressTestButton.Enabled = !isRunning;
         stopButton.Enabled = isRunning;
         createReportButton.Enabled = !isRunning && workflowResults.Count > 0;
     }

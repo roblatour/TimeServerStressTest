@@ -120,7 +120,7 @@ public static class PdfReportExporter
     {
         AddText(content, 36, y, 7, result.Workers.ToString("N0"));
         AddText(content, 112, y, 7, result.TotalRequests.ToString("N0"));
-        AddText(content, 174, y, 7, result.RequestsPerSecond.ToString("N2"));
+        AddText(content, 174, y, 7, result.IsSingleRequest ? "N/A" : result.RequestsPerSecond.ToString("N2"));
         AddText(content, 244, y, 7, result.SuccessfulRequests.ToString("N0"));
         AddText(content, 300, y, 7, result.FailedRequests.ToString("N0"));
         AddText(content, 350, y, 7, $"{result.SuccessRate:N2}%");

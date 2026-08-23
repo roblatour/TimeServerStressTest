@@ -12,8 +12,8 @@ partial class Form1
     private NumericUpDown durationNumericUpDown = null!;
     private Label concurrentTestsLabel = null!;
     private NumericUpDown concurrentTestsNumericUpDown = null!;
-    private Button startButton = null!;
-    private Button multiTestButton = null!;
+    private Button StartSingleStressTestButton = null!;
+    private Button StartMultiStressTestButton = null!;
     private Button stopButton = null!;
     private Button helpButton = null!;
     private GroupBox resultsGroupBox = null!;
@@ -58,15 +58,15 @@ partial class Form1
         groupBox7 = new GroupBox();
         groupBox2 = new GroupBox();
         label1 = new Label();
-        multiTestButton = new Button();
+        StartSingleTestButton = new Button();
         groupBox1 = new GroupBox();
-        startButton = new Button();
+        StartSingleStressTestButton = new Button();
         concurrentTestsNumericUpDown = new NumericUpDown();
         concurrentTestsLabel = new Label();
         durationLabel = new Label();
         durationNumericUpDown = new NumericUpDown();
         groupBox6 = new GroupBox();
-        button1 = new Button();
+        StartMultiStressTestButton = new Button();
         closeButton = new Button();
         helpButton = new Button();
         resultsGroupBox = new GroupBox();
@@ -221,7 +221,7 @@ partial class Form1
         // groupBox2
         // 
         groupBox2.Controls.Add(label1);
-        groupBox2.Controls.Add(multiTestButton);
+        groupBox2.Controls.Add(this.StartMultiStressTestButton);
         groupBox2.Location = new Point(246, 44);
         groupBox2.Name = "groupBox2";
         groupBox2.Size = new Size(230, 100);
@@ -238,20 +238,20 @@ partial class Form1
         label1.TabIndex = 10;
         label1.Text = "Concurrent Requests: 0 - 100";
         // 
-        // multiTestButton
+        // StartMultiStressTestButton
         // 
-        multiTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        multiTestButton.Location = new Point(10, 60);
-        multiTestButton.Name = "multiTestButton";
-        multiTestButton.Size = new Size(200, 30);
-        multiTestButton.TabIndex = 9;
-        multiTestButton.Text = "Start multiple stress tests";
-        multiTestButton.UseVisualStyleBackColor = true;
-        multiTestButton.Click += MultiTestButton_Click;
+        this.StartMultiStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        this.StartMultiStressTestButton.Location = new Point(10, 60);
+        this.StartMultiStressTestButton.Name = "StartMultiStressTestButton";
+        this.StartMultiStressTestButton.Size = new Size(200, 30);
+        this.StartMultiStressTestButton.TabIndex = 9;
+        this.StartMultiStressTestButton.Text = "Start multiple stress tests";
+        this.StartMultiStressTestButton.UseVisualStyleBackColor = true;
+        this.StartMultiStressTestButton.Click += this.StartMultiStressTestButton_Click;
         // 
         // groupBox1
         // 
-        groupBox1.Controls.Add(startButton);
+        groupBox1.Controls.Add(this.StartSingleStressTestButton);
         groupBox1.Controls.Add(concurrentTestsNumericUpDown);
         groupBox1.Controls.Add(concurrentTestsLabel);
         groupBox1.Location = new Point(10, 43);
@@ -261,16 +261,16 @@ partial class Form1
         groupBox1.TabStop = false;
         groupBox1.Text = "Single Stress Test";
         // 
-        // startButton
+        // StartSingleStressTestButton
         // 
-        startButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        startButton.Location = new Point(7, 60);
-        startButton.Name = "startButton";
-        startButton.Size = new Size(200, 30);
-        startButton.TabIndex = 8;
-        startButton.Text = "Start a single stress test";
-        startButton.UseVisualStyleBackColor = true;
-        startButton.Click += StartButton_Click;
+        this.StartSingleStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        this.StartSingleStressTestButton.Location = new Point(7, 60);
+        this.StartSingleStressTestButton.Name = "StartSingleStressTestButton";
+        this.StartSingleStressTestButton.Size = new Size(200, 30);
+        this.StartSingleStressTestButton.TabIndex = 8;
+        this.StartSingleStressTestButton.Text = "Start a single stress test";
+        this.StartSingleStressTestButton.UseVisualStyleBackColor = true;
+        this.StartSingleStressTestButton.Click += this.StartSingleStressTestButton_Click;
         // 
         // concurrentTestsNumericUpDown
         // 
@@ -310,7 +310,7 @@ partial class Form1
         // 
         // groupBox6
         // 
-        groupBox6.Controls.Add(button1);
+        groupBox6.Controls.Add(StartSingleTestButton);
         groupBox6.Location = new Point(10, 14);
         groupBox6.Name = "groupBox6";
         groupBox6.Size = new Size(121, 148);
@@ -318,16 +318,16 @@ partial class Form1
         groupBox6.TabStop = false;
         groupBox6.Text = "Single Test";
         // 
-        // button1
+        // StartSingleTestButton
         // 
-        button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        button1.Location = new Point(6, 104);
-        button1.Name = "button1";
-        button1.Size = new Size(109, 30);
-        button1.TabIndex = 9;
-        button1.Text = "Start a single test";
-        button1.UseVisualStyleBackColor = true;
-        button1.Click += SingleTestButton_Click;
+        StartSingleTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        StartSingleTestButton.Location = new Point(6, 104);
+        StartSingleTestButton.Name = "StartSingleTestButton";
+        StartSingleTestButton.Size = new Size(109, 30);
+        StartSingleTestButton.TabIndex = 9;
+        StartSingleTestButton.Text = "Start a single test";
+        StartSingleTestButton.UseVisualStyleBackColor = true;
+        StartSingleTestButton.Click += StartSingleTestButton_Click;
         // 
         // closeButton
         // 
@@ -583,6 +583,6 @@ partial class Form1
     private Label label1;
     private GroupBox groupBox5;
     private GroupBox groupBox6;
-    private Button button1;
+    private Button StartSingleTestButton;
     private GroupBox groupBox7;
 }

@@ -14,7 +14,8 @@ public sealed record StressTestResult(
     DateTime Started,
     DateTime Ended,
     TimeSpan Elapsed,
-    StressTestStatus Status)
+    StressTestStatus Status,
+    bool IsSingleRequest = false)
 {
     public TimeSpan Duration => Elapsed > TimeSpan.Zero ? Elapsed : TimeSpan.Zero;
 
