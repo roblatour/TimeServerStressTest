@@ -81,16 +81,17 @@ public sealed class StressTestResultTests
 public sealed class NtpStressRunnerTests
 {
     [TestMethod]
-    public async Task RunAsync_MultipleWorkers_StartsOneRequestPerWorkerConcurrently()
+    public async Task RunAsync_ConcurrentRequests_StartsBaseAndRequestedConcurrentWorkers()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         using var receivedRequestsCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        const int workers = 4;
+        const int concurrentRequests = 3;
+        const int totalWorkers = concurrentRequests + 1;
         var receivedRequests = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var receiveTask = Task.Run(async () =>
         {
-            for (var count = 0; count < workers; count++)
+            for (var count = 0; count < totalWorkers; count++)
             {
                 await server.ReceiveAsync(receivedRequestsCancellation.Token);
             }
@@ -102,7 +103,7 @@ public sealed class NtpStressRunnerTests
         var snapshot = await new NtpStressRunner().RunAsync(
             endpoint,
             TimeSpan.FromMilliseconds(100),
-            workers,
+            concurrentRequests,
             0,
             new Progress<StressSnapshot>(),
             CancellationToken.None);
@@ -116,7 +117,7 @@ public sealed class NtpStressRunnerTests
     }
 
     [TestMethod]
-    public async Task RunAsync_UsesOneSocketPerWorker()
+    public async Task RunAsync_OneConcurrentRequest_UsesBaseAndConcurrentSockets()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         var remoteEndpoints = new List<IPEndPoint>();
@@ -142,7 +143,7 @@ public sealed class NtpStressRunnerTests
         await responseTask;
 
         Assert.AreEqual(2, snapshot.SuccessfulRequests);
-        Assert.AreEqual(remoteEndpoints[0], remoteEndpoints[1]);
+        Assert.AreNotEqual(remoteEndpoints[0], remoteEndpoints[1]);
     }
 
     [TestMethod]

@@ -58,7 +58,7 @@ partial class Form1
         groupBox7 = new GroupBox();
         groupBox2 = new GroupBox();
         label1 = new Label();
-        StartSingleTestButton = new Button();
+        StartMultiStressTestButton = new Button();
         groupBox1 = new GroupBox();
         StartSingleStressTestButton = new Button();
         concurrentTestsNumericUpDown = new NumericUpDown();
@@ -66,7 +66,7 @@ partial class Form1
         durationLabel = new Label();
         durationNumericUpDown = new NumericUpDown();
         groupBox6 = new GroupBox();
-        StartMultiStressTestButton = new Button();
+        StartSingleTestButton = new Button();
         closeButton = new Button();
         helpButton = new Button();
         resultsGroupBox = new GroupBox();
@@ -173,6 +173,7 @@ partial class Form1
         serverAddressTextBox.Size = new Size(200, 23);
         serverAddressTextBox.Sorted = true;
         serverAddressTextBox.TabIndex = 1;
+        serverAddressTextBox.SelectedIndexChanged += serverAddressTextBox_SelectedIndexChanged;
         serverAddressTextBox.KeyDown += ServerAddressComboBox_KeyDown;
         // 
         // ntpPortNumericUpDown
@@ -216,12 +217,11 @@ partial class Form1
         groupBox7.TabIndex = 21;
         groupBox7.TabStop = false;
         groupBox7.Text = "Stress Testing";
-        groupBox7.Enter += groupBox7_Enter;
         // 
         // groupBox2
         // 
         groupBox2.Controls.Add(label1);
-        groupBox2.Controls.Add(this.StartMultiStressTestButton);
+        groupBox2.Controls.Add(StartMultiStressTestButton);
         groupBox2.Location = new Point(246, 44);
         groupBox2.Name = "groupBox2";
         groupBox2.Size = new Size(230, 100);
@@ -240,18 +240,18 @@ partial class Form1
         // 
         // StartMultiStressTestButton
         // 
-        this.StartMultiStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        this.StartMultiStressTestButton.Location = new Point(10, 60);
-        this.StartMultiStressTestButton.Name = "StartMultiStressTestButton";
-        this.StartMultiStressTestButton.Size = new Size(200, 30);
-        this.StartMultiStressTestButton.TabIndex = 9;
-        this.StartMultiStressTestButton.Text = "Start multiple stress tests";
-        this.StartMultiStressTestButton.UseVisualStyleBackColor = true;
-        this.StartMultiStressTestButton.Click += this.StartMultiStressTestButton_Click;
+        StartMultiStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        StartMultiStressTestButton.Location = new Point(10, 60);
+        StartMultiStressTestButton.Name = "StartMultiStressTestButton";
+        StartMultiStressTestButton.Size = new Size(200, 30);
+        StartMultiStressTestButton.TabIndex = 9;
+        StartMultiStressTestButton.Text = "Start multiple stress tests";
+        StartMultiStressTestButton.UseVisualStyleBackColor = true;
+        StartMultiStressTestButton.Click += StartMultiStressTestButton_Click;
         // 
         // groupBox1
         // 
-        groupBox1.Controls.Add(this.StartSingleStressTestButton);
+        groupBox1.Controls.Add(StartSingleStressTestButton);
         groupBox1.Controls.Add(concurrentTestsNumericUpDown);
         groupBox1.Controls.Add(concurrentTestsLabel);
         groupBox1.Location = new Point(10, 43);
@@ -263,14 +263,14 @@ partial class Form1
         // 
         // StartSingleStressTestButton
         // 
-        this.StartSingleStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        this.StartSingleStressTestButton.Location = new Point(7, 60);
-        this.StartSingleStressTestButton.Name = "StartSingleStressTestButton";
-        this.StartSingleStressTestButton.Size = new Size(200, 30);
-        this.StartSingleStressTestButton.TabIndex = 8;
-        this.StartSingleStressTestButton.Text = "Start a single stress test";
-        this.StartSingleStressTestButton.UseVisualStyleBackColor = true;
-        this.StartSingleStressTestButton.Click += this.StartSingleStressTestButton_Click;
+        StartSingleStressTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        StartSingleStressTestButton.Location = new Point(7, 60);
+        StartSingleStressTestButton.Name = "StartSingleStressTestButton";
+        StartSingleStressTestButton.Size = new Size(200, 30);
+        StartSingleStressTestButton.TabIndex = 8;
+        StartSingleStressTestButton.Text = "Start a single stress test";
+        StartSingleStressTestButton.UseVisualStyleBackColor = true;
+        StartSingleStressTestButton.Click += StartSingleStressTestButton_Click;
         // 
         // concurrentTestsNumericUpDown
         // 

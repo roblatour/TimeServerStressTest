@@ -93,7 +93,7 @@ public sealed class NtpStressRunner
         ArgumentOutOfRangeException.ThrowIfLessThan(concurrentWorkers, 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(concurrentWorkers, MaximumConcurrentWorkers);
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumRequests, 0);
-        var effectiveWorkers = Math.Max(concurrentWorkers, 1);
+        var effectiveWorkers = concurrentWorkers + 1;
         var addresses = IPAddress.TryParse(endpoint.Host, out var parsedAddress)
             ? [parsedAddress]
             : await Dns.GetHostAddressesAsync(endpoint.Host, cancellationToken).ConfigureAwait(false);
@@ -104,19 +104,23 @@ public sealed class NtpStressRunner
         }
 
         var serverEndpoint = new IPEndPoint(address, endpoint.Port);
+        var startedAt = GetNextUtcSecond();
+        await DelayUntilUtcAsync(startedAt, cancellationToken).ConfigureAwait(false);
+
+        var endsAt = startedAt + duration;
         var stopwatch = Stopwatch.StartNew();
         long startedRequests = 0;
+        long requestsPerSecond = 0;
         long successfulRequests = 0;
         long failedRequests = 0;
 
-        using var durationCancellation = new CancellationTokenSource(duration);
+        using var durationCancellation = new CancellationTokenSource();
         using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, durationCancellation.Token);
-        var startWorkers = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var workers = Enumerable.Range(0, effectiveWorkers)
             .Select(_ => Task.Run(RunWorkerAsync))
             .ToArray();
         var monitor = ReportProgressAsync();
-        startWorkers.SetResult();
+        var deadline = CancelAtAsync(endsAt);
 
         try
         {
@@ -125,23 +129,20 @@ public sealed class NtpStressRunner
         finally
         {
             runCancellation.Cancel();
-            await monitor.ConfigureAwait(false);
-            ReportProgress(duration - stopwatch.Elapsed);
+            await Task.WhenAll(monitor, deadline).ConfigureAwait(false);
+            ReportProgress(endsAt - DateTime.UtcNow);
         }
 
-        return CreateSnapshot(duration - stopwatch.Elapsed);
+        return CreateSnapshot(endsAt - DateTime.UtcNow);
 
         async Task RunWorkerAsync()
         {
-            await startWorkers.Task.ConfigureAwait(false);
-
             using var client = new UdpClient(serverEndpoint.AddressFamily);
             client.Connect(serverEndpoint);
 
             while (!runCancellation.IsCancellationRequested)
             {
-                var requestNumber = Interlocked.Increment(ref startedRequests);
-                if (maximumRequests > 0 && requestNumber > maximumRequests)
+                if (!TryStartRequest())
                 {
                     break;
                 }
@@ -165,14 +166,54 @@ public sealed class NtpStressRunner
             }
         }
 
+        bool TryStartRequest()
+        {
+            if (maximumRequests == 0)
+            {
+                Interlocked.Increment(ref startedRequests);
+                return true;
+            }
+
+            while (true)
+            {
+                var currentRequestCount = Interlocked.Read(ref startedRequests);
+                if (currentRequestCount >= maximumRequests)
+                {
+                    return false;
+                }
+
+                if (Interlocked.CompareExchange(ref startedRequests, currentRequestCount + 1, currentRequestCount) == currentRequestCount)
+                {
+                    return true;
+                }
+            }
+        }
+
+        async Task CancelAtAsync(DateTime endTime)
+        {
+            try
+            {
+                await DelayUntilUtcAsync(endTime, runCancellation.Token).ConfigureAwait(false);
+                durationCancellation.Cancel();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
         async Task ReportProgressAsync()
         {
+            var previousRequestCount = 0L;
+
             try
             {
                 while (!runCancellation.IsCancellationRequested)
                 {
-                    ReportProgress(duration - stopwatch.Elapsed);
-                    await Task.Delay(250, runCancellation.Token).ConfigureAwait(false);
+                    await DelayUntilNextUtcSecondAsync(runCancellation.Token).ConfigureAwait(false);
+                    var requestCount = Interlocked.Read(ref startedRequests);
+                    Interlocked.Exchange(ref requestsPerSecond, requestCount - previousRequestCount);
+                    previousRequestCount = requestCount;
+                    ReportProgress(endsAt - DateTime.UtcNow);
                 }
             }
             catch (OperationCanceledException)
@@ -187,18 +228,42 @@ public sealed class NtpStressRunner
 
         StressSnapshot CreateSnapshot(TimeSpan remaining)
         {
-            var elapsed = stopwatch.Elapsed;
-            var elapsedSeconds = Math.Max(elapsed.TotalSeconds, 0.001);
             var successes = Interlocked.Read(ref successfulRequests);
             var failures = Interlocked.Read(ref failedRequests);
             var completedRequests = successes + failures;
             return new StressSnapshot(
                 completedRequests,
-                (long)Math.Round(completedRequests / elapsedSeconds),
+                Interlocked.Read(ref requestsPerSecond),
                 successes,
                 failures,
                 remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero,
-                elapsed);
+                stopwatch.Elapsed);
+        }
+    }
+
+    private static Task DelayUntilNextUtcSecondAsync(CancellationToken cancellationToken)
+    {
+        return DelayUntilUtcAsync(GetNextUtcSecond(), cancellationToken);
+    }
+
+    private static DateTime GetNextUtcSecond()
+    {
+        var now = DateTime.UtcNow;
+        var ticksUntilNextSecond = TimeSpan.TicksPerSecond - now.Ticks % TimeSpan.TicksPerSecond;
+        return now.AddTicks(ticksUntilNextSecond);
+    }
+
+    private static async Task DelayUntilUtcAsync(DateTime targetTime, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            var remaining = targetTime - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            await Task.Delay(remaining, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing.Text;
 using System.Reflection;
 
 namespace TimeServerStressTest;
@@ -14,6 +15,12 @@ public partial class Form1 : Form
     private DateTime? workflowEnded;
     private NtpEndpoint? workflowEndpoint;
     private bool suppressStressTestWarning;
+    private string lastServerAddress = "";
+
+    const string warningMessage = "Use this application only to stress test internal time servers which you are authorized to stress test.\r\n\r\n" +
+        "Stress testing external time servers or public time-server pools will most likely cause your external IP address to be blocked or banned.\r\n\r\n" +
+        "Stress testing internal time servers or internal time server pools may also cause your machine's internal IP address to be blocked or banned.\r\n\r\n" +
+        "Continue only if you are authorized to stress test this time server and know that doing so will not cause your machine's IP address or external address to be blocked or banned.";
 
     public Form1()
     {
@@ -97,7 +104,10 @@ public partial class Form1 : Form
 
         if (!singleRequest)
         {
-            if (!ConfirmStressTest())
+            var confirmed = endpoint!.Host.Contains("pool", StringComparison.OrdinalIgnoreCase)
+                ? ConfirmPoolStressTest(endpoint.Host)
+                : ConfirmStressTest();
+            if (!confirmed)
             {
                 return;
             }
@@ -206,6 +216,63 @@ public partial class Form1 : Form
             singleRequest);
     }
 
+    private bool ConfirmPoolStressTest(string serverName)
+    {
+        using var warningDialog = new Form
+        {
+            AutoScaleMode = AutoScaleMode.Font,
+            ClientSize = new Size(620, 300),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = false,
+            StartPosition = FormStartPosition.CenterParent,
+            Text = "Time Server Pool Stress Test Warning"
+        };
+        var warningLabel = new Label
+        {
+            AutoSize = false,
+            Location = new Point(20, 20),
+            Size = new Size(580, 160),
+            Text = warningMessage
+        };
+        var serverNameLabel = new Label
+        {
+            AutoSize = false,
+            ForeColor = Color.Red,
+            Font = new Font("Helvetica", 16.0F),
+            Location = new Point(20, 200),
+            Size = new Size(580, 23),
+            Text = serverName,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        var continueButton = new Button
+        {
+            DialogResult = DialogResult.OK,
+            Location = new Point(420, 250),
+            Size = new Size(90, 30),
+            Text = "Continue",
+            UseVisualStyleBackColor = true
+        };
+        var cancelButton = new Button
+        {
+            DialogResult = DialogResult.Cancel,
+            Location = new Point(520, 250),
+            Size = new Size(90, 30),
+            Text = "Cancel",
+            UseVisualStyleBackColor = true
+        };
+        warningDialog.Controls.Add(warningLabel);
+        warningDialog.Controls.Add(serverNameLabel);
+        warningDialog.Controls.Add(continueButton);
+        warningDialog.Controls.Add(cancelButton);
+        warningDialog.Shown += (_, _) => cancelButton.Focus();
+        warningDialog.AcceptButton = cancelButton;
+        warningDialog.CancelButton = cancelButton;
+
+        return warningDialog.ShowDialog(this) == DialogResult.OK;
+    }
+
     private bool ConfirmStressTest()
     {
 
@@ -237,10 +304,7 @@ public partial class Form1 : Form
             AutoSize = false,
             Location = new Point(20, 20),
             Size = new Size(580, 160),
-            Text = "Use this application only to stress test internal time servers which you are authorized to stress test.\r\n\r\n" +
-            "Stress testing external time servers or public time-server pools will most likely cause your external IP address to be blocked or banned.\r\n\r\n" +
-            "Stress testing internal time servers or internal time server pools may also cause your machine's internal IP address to be blocked or banned.\r\n\r\n" +
-            "Continue only if you are authorized to stress test the specified time server and know that in doing your machine's IP address or external address will not be blocked or banned."
+            Text = warningMessage
         };
         var suppressWarningCheckBox = new CheckBox
         {
@@ -497,8 +561,15 @@ public partial class Form1 : Form
         this.Close();
     }
 
-    private void groupBox7_Enter(object sender, EventArgs e)
+    private void serverAddressTextBox_SelectedIndexChanged(object sender, EventArgs e)
     {
+        // if the user changes the server address, reset the suppressStressTestWarning flag to false so that the warning is shown again for the new server address
+
+        if (serverAddressTextBox.Text != lastServerAddress)
+        {
+            lastServerAddress = serverAddressTextBox.Text;
+            suppressStressTestWarning = false;
+        }
 
     }
 }

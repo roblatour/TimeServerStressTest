@@ -1,4 +1,4 @@
-# Time Server Stress Test (Version 1.1 - 2026-08-22)
+# Time Server Stress Test (Version 1.2 - 2026-08-31)
 
 ## OVERVIEW
 
