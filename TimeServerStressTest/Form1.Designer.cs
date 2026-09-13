@@ -10,6 +10,8 @@ partial class Form1
     private NumericUpDown ntpPortNumericUpDown = null!;
     private Label durationLabel = null!;
     private NumericUpDown durationNumericUpDown = null!;
+    private Label maxRequestsPerSecondLabel = null!;
+    private IncrementNumericUpDown maxRequestsPerSecondNumericUpDown = null!;
     private Label concurrentTestsLabel = null!;
     private NumericUpDown concurrentTestsNumericUpDown = null!;
     private Button StartSingleStressTestButton = null!;
@@ -63,6 +65,10 @@ partial class Form1
         StartSingleStressTestButton = new Button();
         concurrentTestsNumericUpDown = new NumericUpDown();
         concurrentTestsLabel = new Label();
+        testModeLabel = new Label();
+        testModeComboBox = new ComboBox();
+        maxRequestsPerSecondLabel = new Label();
+        maxRequestsPerSecondNumericUpDown = new IncrementNumericUpDown();
         durationLabel = new Label();
         durationNumericUpDown = new NumericUpDown();
         groupBox6 = new GroupBox();
@@ -95,6 +101,7 @@ partial class Form1
         groupBox2.SuspendLayout();
         groupBox1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).BeginInit();
+        (maxRequestsPerSecondNumericUpDown).BeginInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).BeginInit();
         groupBox6.SuspendLayout();
         resultsGroupBox.SuspendLayout();
@@ -126,7 +133,7 @@ partial class Form1
         groupBox5.Controls.Add(createReportButton);
         groupBox5.Location = new Point(918, 12);
         groupBox5.Name = "groupBox5";
-        groupBox5.Size = new Size(155, 168);
+        groupBox5.Size = new Size(155, 191);
         groupBox5.TabIndex = 22;
         groupBox5.TabStop = false;
         groupBox5.Text = "Create Report";
@@ -135,11 +142,11 @@ partial class Form1
         // 
         createReportButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         createReportButton.Enabled = false;
-        createReportButton.Location = new Point(16, 117);
+        createReportButton.Location = new Point(19, 146);
         createReportButton.Name = "createReportButton";
         createReportButton.Size = new Size(120, 30);
         createReportButton.TabIndex = 16;
-        createReportButton.Text = "Create Report";
+        createReportButton.Text = "Create Reports";
         createReportButton.UseVisualStyleBackColor = true;
         createReportButton.Click += SaveResultsButton_Click;
         // 
@@ -184,6 +191,7 @@ partial class Form1
         ntpPortNumericUpDown.Name = "ntpPortNumericUpDown";
         ntpPortNumericUpDown.Size = new Size(90, 23);
         ntpPortNumericUpDown.TabIndex = 3;
+        ntpPortNumericUpDown.TextAlign = HorizontalAlignment.Right;
         ntpPortNumericUpDown.Value = new decimal(new int[] { 123, 0, 0, 0 });
         // 
         // ntpPortLabel
@@ -201,7 +209,7 @@ partial class Form1
         groupBox3.Controls.Add(groupBox6);
         groupBox3.Location = new Point(271, 12);
         groupBox3.Name = "groupBox3";
-        groupBox3.Size = new Size(633, 168);
+        groupBox3.Size = new Size(633, 197);
         groupBox3.TabIndex = 20;
         groupBox3.TabStop = false;
         // 
@@ -209,11 +217,15 @@ partial class Form1
         // 
         groupBox7.Controls.Add(groupBox2);
         groupBox7.Controls.Add(groupBox1);
+        groupBox7.Controls.Add(testModeLabel);
+        groupBox7.Controls.Add(testModeComboBox);
+        groupBox7.Controls.Add(maxRequestsPerSecondLabel);
+        groupBox7.Controls.Add(maxRequestsPerSecondNumericUpDown);
         groupBox7.Controls.Add(durationLabel);
         groupBox7.Controls.Add(durationNumericUpDown);
         groupBox7.Location = new Point(137, 14);
         groupBox7.Name = "groupBox7";
-        groupBox7.Size = new Size(490, 148);
+        groupBox7.Size = new Size(490, 177);
         groupBox7.TabIndex = 21;
         groupBox7.TabStop = false;
         groupBox7.Text = "Stress Testing";
@@ -222,7 +234,7 @@ partial class Form1
         // 
         groupBox2.Controls.Add(label1);
         groupBox2.Controls.Add(StartMultiStressTestButton);
-        groupBox2.Location = new Point(246, 44);
+        groupBox2.Location = new Point(246, 72);
         groupBox2.Name = "groupBox2";
         groupBox2.Size = new Size(230, 100);
         groupBox2.TabIndex = 19;
@@ -234,9 +246,9 @@ partial class Form1
         label1.AutoSize = true;
         label1.Location = new Point(6, 30);
         label1.Name = "label1";
-        label1.Size = new Size(158, 15);
+        label1.Size = new Size(155, 15);
         label1.TabIndex = 10;
-        label1.Text = "Concurrent Requests: 0 - 100";
+        label1.Text = "Concurrent requests: 0 - 100";
         // 
         // StartMultiStressTestButton
         // 
@@ -254,7 +266,7 @@ partial class Form1
         groupBox1.Controls.Add(StartSingleStressTestButton);
         groupBox1.Controls.Add(concurrentTestsNumericUpDown);
         groupBox1.Controls.Add(concurrentTestsLabel);
-        groupBox1.Location = new Point(10, 43);
+        groupBox1.Location = new Point(10, 72);
         groupBox1.Name = "groupBox1";
         groupBox1.Size = new Size(225, 100);
         groupBox1.TabIndex = 18;
@@ -278,6 +290,7 @@ partial class Form1
         concurrentTestsNumericUpDown.Name = "concurrentTestsNumericUpDown";
         concurrentTestsNumericUpDown.Size = new Size(73, 23);
         concurrentTestsNumericUpDown.TabIndex = 7;
+        concurrentTestsNumericUpDown.TextAlign = HorizontalAlignment.Right;
         concurrentTestsNumericUpDown.Value = new decimal(new int[] { 20, 0, 0, 0 });
         // 
         // concurrentTestsLabel
@@ -285,18 +298,57 @@ partial class Form1
         concurrentTestsLabel.AutoSize = true;
         concurrentTestsLabel.Location = new Point(6, 32);
         concurrentTestsLabel.Name = "concurrentTestsLabel";
-        concurrentTestsLabel.Size = new Size(120, 15);
+        concurrentTestsLabel.Size = new Size(117, 15);
         concurrentTestsLabel.TabIndex = 6;
-        concurrentTestsLabel.Text = "Concurrent Requests:";
+        concurrentTestsLabel.Text = "Concurrent requests:";
+        // 
+        // testModeLabel
+        // 
+        testModeLabel.AutoSize = true;
+        testModeLabel.Location = new Point(246, 49);
+        testModeLabel.Name = "testModeLabel";
+        testModeLabel.Size = new Size(65, 15);
+        testModeLabel.TabIndex = 7;
+        testModeLabel.Text = "Test mode:";
+        // 
+        // testModeComboBox
+        // 
+        testModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        testModeComboBox.FormattingEnabled = true;
+        testModeComboBox.Items.AddRange(new object[] { StressTestMode.Paced, StressTestMode.Saturation });
+        testModeComboBox.Location = new Point(335, 46);
+        testModeComboBox.Name = "testModeComboBox";
+        testModeComboBox.Size = new Size(141, 23);
+        testModeComboBox.TabIndex = 8;
+        // 
+        // maxRequestsPerSecondLabel
+        // 
+        maxRequestsPerSecondLabel.AutoSize = true;
+        maxRequestsPerSecondLabel.Location = new Point(246, 22);
+        maxRequestsPerSecondLabel.Name = "maxRequestsPerSecondLabel";
+        maxRequestsPerSecondLabel.Size = new Size(122, 15);
+        maxRequestsPerSecondLabel.TabIndex = 6;
+        maxRequestsPerSecondLabel.Text = "Max requests/second:";
+        // 
+        // maxRequestsPerSecondNumericUpDown
+        // 
+        maxRequestsPerSecondNumericUpDown.Location = new Point(384, 20);
+        maxRequestsPerSecondNumericUpDown.Maximum = new decimal(new int[] { 50000, 0, 0, 0 });
+        maxRequestsPerSecondNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+        maxRequestsPerSecondNumericUpDown.Name = "maxRequestsPerSecondNumericUpDown";
+        maxRequestsPerSecondNumericUpDown.Size = new Size(92, 23);
+        maxRequestsPerSecondNumericUpDown.TabIndex = 6;
+        maxRequestsPerSecondNumericUpDown.TextAlign = HorizontalAlignment.Right;
+        maxRequestsPerSecondNumericUpDown.Value = new decimal(new int[] { 1000, 0, 0, 0 });
         // 
         // durationLabel
         // 
         durationLabel.AutoSize = true;
         durationLabel.Location = new Point(10, 22);
         durationLabel.Name = "durationLabel";
-        durationLabel.Size = new Size(139, 15);
+        durationLabel.Size = new Size(133, 15);
         durationLabel.TabIndex = 4;
-        durationLabel.Text = "Test Durations (seconds):";
+        durationLabel.Text = "Test duration (seconds):";
         // 
         // durationNumericUpDown
         // 
@@ -306,6 +358,7 @@ partial class Form1
         durationNumericUpDown.Name = "durationNumericUpDown";
         durationNumericUpDown.Size = new Size(67, 23);
         durationNumericUpDown.TabIndex = 5;
+        durationNumericUpDown.TextAlign = HorizontalAlignment.Right;
         durationNumericUpDown.Value = new decimal(new int[] { 15, 0, 0, 0 });
         // 
         // groupBox6
@@ -313,7 +366,7 @@ partial class Form1
         groupBox6.Controls.Add(StartSingleTestButton);
         groupBox6.Location = new Point(10, 14);
         groupBox6.Name = "groupBox6";
-        groupBox6.Size = new Size(121, 148);
+        groupBox6.Size = new Size(121, 172);
         groupBox6.TabIndex = 20;
         groupBox6.TabStop = false;
         groupBox6.Text = "Single Test";
@@ -321,7 +374,7 @@ partial class Form1
         // StartSingleTestButton
         // 
         StartSingleTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        StartSingleTestButton.Location = new Point(6, 104);
+        StartSingleTestButton.Location = new Point(6, 132);
         StartSingleTestButton.Name = "StartSingleTestButton";
         StartSingleTestButton.Size = new Size(109, 30);
         StartSingleTestButton.TabIndex = 9;
@@ -365,7 +418,7 @@ partial class Form1
         resultsGroupBox.Controls.Add(failedRequestsValueLabel);
         resultsGroupBox.Controls.Add(remainingProgressBar);
         resultsGroupBox.Controls.Add(multiTestProgressBar);
-        resultsGroupBox.Location = new Point(27, 186);
+        resultsGroupBox.Location = new Point(27, 209);
         resultsGroupBox.Name = "resultsGroupBox";
         resultsGroupBox.Size = new Size(1050, 212);
         resultsGroupBox.TabIndex = 12;
@@ -374,24 +427,30 @@ partial class Form1
         // 
         // totalRequestsTitleLabel
         // 
-        totalRequestsTitleLabel.Location = new Point(0, 0);
+        totalRequestsTitleLabel.AutoSize = true;
+        totalRequestsTitleLabel.Location = new Point(20, 28);
         totalRequestsTitleLabel.Name = "totalRequestsTitleLabel";
-        totalRequestsTitleLabel.Size = new Size(100, 23);
+        totalRequestsTitleLabel.Size = new Size(83, 15);
         totalRequestsTitleLabel.TabIndex = 0;
+        totalRequestsTitleLabel.Text = "Total requests:";
         // 
         // requestsPerSecondTitleLabel
         // 
-        requestsPerSecondTitleLabel.Location = new Point(0, 0);
+        requestsPerSecondTitleLabel.AutoSize = true;
+        requestsPerSecondTitleLabel.Location = new Point(20, 48);
         requestsPerSecondTitleLabel.Name = "requestsPerSecondTitleLabel";
-        requestsPerSecondTitleLabel.Size = new Size(100, 23);
+        requestsPerSecondTitleLabel.Size = new Size(118, 15);
         requestsPerSecondTitleLabel.TabIndex = 1;
+        requestsPerSecondTitleLabel.Text = "Requests per second:";
         // 
         // successfulRequestsTitleLabel
         // 
-        successfulRequestsTitleLabel.Location = new Point(0, 0);
+        successfulRequestsTitleLabel.AutoSize = true;
+        successfulRequestsTitleLabel.Location = new Point(20, 68);
         successfulRequestsTitleLabel.Name = "successfulRequestsTitleLabel";
-        successfulRequestsTitleLabel.Size = new Size(100, 23);
+        successfulRequestsTitleLabel.Size = new Size(112, 15);
         successfulRequestsTitleLabel.TabIndex = 2;
+        successfulRequestsTitleLabel.Text = "Successful requests:";
         // 
         // stopButton
         // 
@@ -407,38 +466,48 @@ partial class Form1
         // 
         // failedRequestsTitleLabel
         // 
-        failedRequestsTitleLabel.Location = new Point(0, 0);
+        failedRequestsTitleLabel.AutoSize = true;
+        failedRequestsTitleLabel.Location = new Point(20, 88);
         failedRequestsTitleLabel.Name = "failedRequestsTitleLabel";
-        failedRequestsTitleLabel.Size = new Size(100, 23);
+        failedRequestsTitleLabel.Size = new Size(88, 15);
         failedRequestsTitleLabel.TabIndex = 3;
+        failedRequestsTitleLabel.Text = "Failed requests:";
         // 
         // totalRequestsValueLabel
         // 
-        totalRequestsValueLabel.Location = new Point(0, 0);
+        totalRequestsValueLabel.AutoSize = true;
+        totalRequestsValueLabel.Location = new Point(190, 28);
         totalRequestsValueLabel.Name = "totalRequestsValueLabel";
-        totalRequestsValueLabel.Size = new Size(100, 23);
+        totalRequestsValueLabel.Size = new Size(13, 15);
         totalRequestsValueLabel.TabIndex = 4;
+        totalRequestsValueLabel.Text = "0";
         // 
         // requestsPerSecondValueLabel
         // 
-        requestsPerSecondValueLabel.Location = new Point(0, 0);
+        requestsPerSecondValueLabel.AutoSize = true;
+        requestsPerSecondValueLabel.Location = new Point(190, 48);
         requestsPerSecondValueLabel.Name = "requestsPerSecondValueLabel";
-        requestsPerSecondValueLabel.Size = new Size(100, 23);
+        requestsPerSecondValueLabel.Size = new Size(13, 15);
         requestsPerSecondValueLabel.TabIndex = 5;
+        requestsPerSecondValueLabel.Text = "0";
         // 
         // successfulRequestsValueLabel
         // 
-        successfulRequestsValueLabel.Location = new Point(0, 0);
+        successfulRequestsValueLabel.AutoSize = true;
+        successfulRequestsValueLabel.Location = new Point(190, 68);
         successfulRequestsValueLabel.Name = "successfulRequestsValueLabel";
-        successfulRequestsValueLabel.Size = new Size(100, 23);
+        successfulRequestsValueLabel.Size = new Size(13, 15);
         successfulRequestsValueLabel.TabIndex = 6;
+        successfulRequestsValueLabel.Text = "0";
         // 
         // failedRequestsValueLabel
         // 
-        failedRequestsValueLabel.Location = new Point(0, 0);
+        failedRequestsValueLabel.AutoSize = true;
+        failedRequestsValueLabel.Location = new Point(190, 88);
         failedRequestsValueLabel.Name = "failedRequestsValueLabel";
-        failedRequestsValueLabel.Size = new Size(100, 23);
+        failedRequestsValueLabel.Size = new Size(13, 15);
         failedRequestsValueLabel.TabIndex = 7;
+        failedRequestsValueLabel.Text = "0";
         // 
         // remainingProgressBar
         // 
@@ -463,7 +532,7 @@ partial class Form1
         // 
         chartGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         chartGroupBox.Controls.Add(resultsChart);
-        chartGroupBox.Location = new Point(24, 423);
+        chartGroupBox.Location = new Point(27, 427);
         chartGroupBox.Name = "chartGroupBox";
         chartGroupBox.Size = new Size(1050, 300);
         chartGroupBox.TabIndex = 13;
@@ -494,9 +563,9 @@ partial class Form1
         // 
         summaryGroupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         summaryGroupBox.Controls.Add(resultsDataGridView);
-        summaryGroupBox.Location = new Point(21, 738);
+        summaryGroupBox.Location = new Point(27, 730);
         summaryGroupBox.Name = "summaryGroupBox";
-        summaryGroupBox.Size = new Size(1053, 250);
+        summaryGroupBox.Size = new Size(1047, 263);
         summaryGroupBox.TabIndex = 14;
         summaryGroupBox.TabStop = false;
         summaryGroupBox.Text = "Executed Tests";
@@ -516,7 +585,7 @@ partial class Form1
         resultsDataGridView.ReadOnly = true;
         resultsDataGridView.RowHeadersVisible = false;
         resultsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        resultsDataGridView.Size = new Size(1047, 228);
+        resultsDataGridView.Size = new Size(1041, 241);
         resultsDataGridView.TabIndex = 0;
         // 
         // Form1
@@ -542,9 +611,11 @@ partial class Form1
         groupBox1.ResumeLayout(false);
         groupBox1.PerformLayout();
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).EndInit();
+        (maxRequestsPerSecondNumericUpDown).EndInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).EndInit();
         groupBox6.ResumeLayout(false);
         resultsGroupBox.ResumeLayout(false);
+        resultsGroupBox.PerformLayout();
         chartGroupBox.ResumeLayout(false);
         summaryGroupBox.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)resultsDataGridView).EndInit();
@@ -585,4 +656,6 @@ partial class Form1
     private GroupBox groupBox6;
     private Button StartSingleTestButton;
     private GroupBox groupBox7;
+    private Label testModeLabel;
+    private ComboBox testModeComboBox;
 }

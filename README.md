@@ -1,21 +1,28 @@
-# Time Server Stress Test (Version 1.2 - 2026-08-31)
+# Time Server Stress Test (Version 2 - 2026-09-13)
 
 ## OVERVIEW
 
 Time Server Stress Test is a Windows desktop utility for authorized stress testing of NTP time servers on private networks.
 
-The application sends concurrent UDP NTP requests to a selected server for a configurable duration and reports the total request count, requests per second, successful responses, and failed responses in real time.
+Based on configurable settings the application sends concurrent UDP NTPv4 requests to a selected server, reports testing results in real time, and optionally creates a report in .pdf format and .csv extract file.
 
 ![Screenshot](/Misc/screenshot.jpg)
 
 ## KEY FEATURES
 
 - **NTP endpoint support**: Test an IP address or host name with a configurable UDP port `123` used by default.
-- **Configurable test duration**: Run tests from 1 to 300 seconds.
-- **Concurrent requests**: Uses from 1 to 100 concurrent workers to exercise the selected NTP server.
-- **Run test**: Run a single test (one NTP request), a single stress test of multiple NTP requests for a specified duration involving a specified number of concurrent (running in parallel) tests, or automatically run multiple stress tests from concurrency 0 to 100, each for a specified duration.
-- **Live results**: View total requests, requests per second, successful requests, failed requests, and remaining time while the test runs.
--  **Save results to a report**: Save results to a [report](Misc/sample_report.pdf) (.pdf format).
+- **Configurable:**
+> - **Test duration**
+> - **Max requests/second**
+> - **Concurrent requests** 
+> - **Test mode:** (Paced or Saturated)
+> - **Test type:** run a single test (one NTP request only); a single stress test; or multiple stress tests automatically one after the other.
+- **Live results**: View various result in real time as the tests runs.
+-  **Save the final results** to either or both a:
+> - **report:** with your own notes [example](Misc/sample_report.pdf) (.pdf format)
+> - **csv file extract:** [example](Misc/sample_report.csv) - documented
+    [here](Misc/Stress_Test_CSV_values.md)
+
 
 ## GETTING STARTED
 
@@ -25,11 +32,14 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 
 &emsp;&emsp;&emsp;&emsp;https://github.com/roblatour/TimeServerStressTest/releases/latest 
 
-&emsp;&emsp;1.2 unzip and run the TimeServerStressTest.exe program
+&emsp;&emsp;1.2 unzip all its contents into a single folder and double click on the
+TimeServerStressTest.exe program to run it.
 
-&emsp;&emsp;**Note:** The TimeServerStressTest.exe above program is unsigned, however
-
-&emsp;&emsp;&emsp;&emsp;&emsp;you may also build it yourself (see Option 2 directly below)
+&emsp;&emsp;**Notes:** 
+>> The TimeServerStressTest.exe while verified on Github is unsigned, so you 
+may get a Windows security alert
+>>
+>>However, you may build it yourself (see Option 2 directly below) should you have concerns
 
 **Option 2:**
 
@@ -51,7 +61,7 @@ The application sends concurrent UDP NTP requests to a selected server for a con
 
 8. Review the live test results, or select **Stop** to end the test early
    
-9. Optionally, click **Create Report** to create and view a report
+9. Optionally, click **Create Report** to create and view a report and/or the cvs extract
 
 
 ## AUTHORIZED USE ONLY

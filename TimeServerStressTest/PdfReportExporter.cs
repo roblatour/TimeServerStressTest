@@ -10,9 +10,9 @@ public static class PdfReportExporter
     private const int FontObjectNumber = 1;
     private const int ImageObjectNumber = 2;
 
-    public static void Save(string path, IReadOnlyList<StressTestResult> results, byte[] chartJpeg, Size chartSize, NtpEndpoint endpoint, DateTime generatedAt)
+    public static void Save(string path, IReadOnlyList<StressTestResult> results, byte[] chartJpeg, Size chartSize, NtpEndpoint endpoint, DateTime generatedAt, string notes, StressTestMode testMode, int testDurationSeconds, int maximumRequestsPerSecond)
     {
-        var pages = CreatePages(results, endpoint, generatedAt);
+        var pages = CreatePages(results, endpoint, generatedAt, notes, testMode, testDurationSeconds, maximumRequestsPerSecond);
         var objects = new List<byte[]>();
         objects.Add(Encoding.ASCII.GetBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"));
         objects.Add(CreateStreamObject($"<< /Type /XObject /Subtype /Image /Width {chartSize.Width} /Height {chartSize.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {chartJpeg.Length} >>", chartJpeg));
@@ -65,7 +65,7 @@ public static class PdfReportExporter
         writer.Write(Encoding.ASCII.GetBytes($"trailer\n<< /Size {objects.Count + 1} /Root {catalogObjectNumber} 0 R >>\nstartxref\n{crossReferenceOffset}\n%%EOF"));
     }
 
-    private static List<string> CreatePages(IReadOnlyList<StressTestResult> results, NtpEndpoint endpoint, DateTime generatedAt)
+    private static List<string> CreatePages(IReadOnlyList<StressTestResult> results, NtpEndpoint endpoint, DateTime generatedAt, string notes, StressTestMode testMode, int testDurationSeconds, int maximumRequestsPerSecond)
     {
         var pages = new List<string>();
         var firstPage = new StringBuilder();
@@ -78,7 +78,7 @@ public static class PdfReportExporter
 
         foreach (var result in results)
         {
-            if (rowY < 50)
+            if (rowY < 64)
             {
                 pages.Add(currentPage.ToString());
                 currentPage = new StringBuilder();
@@ -88,7 +88,50 @@ public static class PdfReportExporter
             }
 
             AddResultRow(currentPage, rowY, result);
-            rowY -= 14;
+            rowY -= 16;
+        }
+
+        var noteLines = string.IsNullOrWhiteSpace(notes)
+            ? []
+            : notes.Replace("\r\n", "\n").Replace('\r', '\n')
+                .Split('\n')
+                .SelectMany(line => line.Length == 0 ? [string.Empty] : line.Chunk(95).Select(characters => new string(characters)))
+                .ToArray();
+        (double Minimum, double Maximum)? keyResults = results.Count == 0
+            ? null
+            : (results.Min(result => result.SuccessfulRequestsPerSecond), results.Max(result => result.SuccessfulRequestsPerSecond));
+        var detailLineCount = 3 + (keyResults is null ? 0 : 2) + (noteLines.Length == 0 ? 0 : noteLines.Length + 1);
+        if (rowY - (detailLineCount - 1) * 12 < 50)
+        {
+            pages.Add(currentPage.ToString());
+            currentPage = new StringBuilder();
+            AddText(currentPage, 36, 576, 14, "NTP Stress Test Results");
+            rowY = 552;
+        }
+
+        AddText(currentPage, 36, rowY, 8, $" ");
+        rowY -= 12;
+        AddText(currentPage, 36, rowY, 8, $"Options: Test mode: {testMode}; Test duration: {testDurationSeconds:N0} seconds; Max requests/second: {maximumRequestsPerSecond:N0}");
+        rowY -= 12;
+        AddText(currentPage, 36, rowY, 8, $" ");
+
+        if (keyResults is not null)
+        {
+            rowY -= 12;
+            AddText(currentPage, 36, rowY, 8, $"Key results: Minimum Successful Requests/Second {keyResults.Value.Minimum:N2}; Maximum Successful Requests/Second {keyResults.Value.Maximum:N2}");
+            rowY -= 12;
+            AddText(currentPage, 36, rowY, 8, $" ");
+        }
+
+        if (noteLines.Length > 0)
+        {
+            rowY -= 12;
+            AddText(currentPage, 36, rowY, 8, "Notes:");
+            foreach (var line in noteLines)
+            {
+                rowY -= 12;
+                AddText(currentPage, 36, rowY, 8, line);
+            }
         }
 
         AddText(currentPage, 36, 34, 8, $"Time Server Port: {endpoint.Port}");
@@ -98,7 +141,7 @@ public static class PdfReportExporter
             AddText(currentPage, 36, 20, 8, $"Tests started: {results[0].Started:G}    Ended: {results[^1].Ended:G}");
         }
 
-      //  AddText(currentPage, 36, 20, 8, $"Report generated: {generatedAt:G}");
+        //  AddText(currentPage, 36, 20, 8, $"Report generated: {generatedAt:G}");
         pages.Add(currentPage.ToString());
         return pages;
     }
@@ -107,12 +150,14 @@ public static class PdfReportExporter
     {
         AddText(content, 36, y, 7, "Concurrent Requests");
         AddText(content, 112, y, 7, "Total Requests");
-        AddText(content, 174, y, 7, "Requests / Sec.");
+        AddText(content, 174, y, 7, "Requests/Second");
         AddText(content, 244, y, 7, "Successes");
         AddText(content, 300, y, 7, "Failures");
-        AddText(content, 350, y, 7, "Success Rate");
-        AddText(content, 417, y, 7, "Started");
-        AddText(content, 537, y, 7, "Ended");
+        AddText(content, 350, y, 7, "Losses");
+        AddText(content, 395, y, 7, "Success Rate");
+        AddText(content, 460, y, 7, "Successful Requests/Second");
+        AddText(content, 570, y, 7, "Started");
+        AddText(content, 680, y, 7, "Ended");
         content.AppendFormat(CultureInfo.InvariantCulture, "36 {0} m 756 {0} l S\n", y - 3);
     }
 
@@ -123,9 +168,11 @@ public static class PdfReportExporter
         AddText(content, 174, y, 7, result.IsSingleRequest ? "N/A" : result.RequestsPerSecond.ToString("N2"));
         AddText(content, 244, y, 7, result.SuccessfulRequests.ToString("N0"));
         AddText(content, 300, y, 7, result.FailedRequests.ToString("N0"));
-        AddText(content, 350, y, 7, $"{result.SuccessRate:N2}%");
-        AddText(content, 417, y, 7, result.Started.ToString("G"));
-        AddText(content, 537, y, 7, result.Ended.ToString("G"));
+        AddText(content, 350, y, 7, result.LostRequests.ToString("N0"));
+        AddText(content, 395, y, 7, $"{result.SuccessRate:N2}%");
+        AddText(content, 460, y, 7, result.SuccessfulRequestsPerSecond.ToString("N2"));
+        AddText(content, 570, y, 7, result.Started.ToString("G"));
+        AddText(content, 680, y, 7, result.Ended.ToString("G"));
     }
 
     private static void AddText(StringBuilder content, int x, int y, int fontSize, string value)

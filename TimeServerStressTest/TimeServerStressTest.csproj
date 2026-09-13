@@ -5,18 +5,24 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Title>Time Server Stress Test</Title>
     <AssemblyTitle>$(Title)</AssemblyTitle>
     <Authors>Rob Latour</Authors>
     <Copyright>Copyright 2026, $(Authors)</Copyright>
-    <Version>1.2.0</Version>
+    <Version>2.0.0</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/roblatour/TimeServerStressTest</PackageProjectUrl>
+    <Description>NTP Time Server Stress Test</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="System.IO" />
     <AssemblyMetadata Include="License" Value="$(PackageLicenseExpression)" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TimeServerStressTest.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>

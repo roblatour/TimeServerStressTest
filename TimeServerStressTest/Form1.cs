@@ -7,6 +7,8 @@ namespace TimeServerStressTest;
 public partial class Form1 : Form
 {
     private const string HelpUrl = "https://github.com/roblatour/TimeServerStressTest";
+    private const int GracePeriodMilliseconds = 3_000;
+    private const int DrainPeriodTimeoutAfterLastReplyMilliseconds = 10_000;
     private readonly List<StressTestResult> workflowResults = [];
     private CancellationTokenSource? testCancellation;
     private int testDurationSeconds;
@@ -25,7 +27,6 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
-        ConfigureCurrentTestStatistics();
         ConfigureResultsTable();
         Text = GetWindowTitle();
         serverAddressTextBox.Items.AddRange(UserPreferences.LoadServerAddresses().Cast<object>().ToArray());
@@ -33,6 +34,8 @@ public partial class Form1 : Form
         ntpPortNumericUpDown.Value = UserPreferences.LoadNtpPort();
         concurrentTestsNumericUpDown.Value = UserPreferences.LoadConcurrentTests();
         durationNumericUpDown.Value = UserPreferences.LoadTestDurationSeconds();
+        maxRequestsPerSecondNumericUpDown.Value = UserPreferences.LoadMaximumRequestsPerSecond();
+        testModeComboBox.SelectedItem = UserPreferences.LoadStressTestMode();
         testDurationSeconds = (int)durationNumericUpDown.Value;
         remainingProgressBar.Visible = false;
         multiTestProgressBar.Visible = false;
@@ -102,20 +105,21 @@ public partial class Form1 : Form
             serverAddressTextBox.Text = endpoint.Host;
         }
 
-        if (!singleRequest)
+        var requiresExternalAddressWarning = endpoint!.Host.Contains("pool", StringComparison.OrdinalIgnoreCase) ||
+            await NetworkAddressScope.ResolvesToExternalAddressAsync(endpoint.Host, CancellationToken.None);
+        var confirmed = requiresExternalAddressWarning
+            ? ConfirmExternalStressTest(endpoint.Host)
+            : singleRequest || ConfirmStressTest();
+        if (!confirmed)
         {
-            var confirmed = endpoint!.Host.Contains("pool", StringComparison.OrdinalIgnoreCase)
-                ? ConfirmPoolStressTest(endpoint.Host)
-                : ConfirmStressTest();
-            if (!confirmed)
-            {
-                return;
-            }
+            return;
         }
 
         AddServerAddressToHistory(serverAddressTextBox.Text);
         testDurationSeconds = singleRequest ? 2 : (int)durationNumericUpDown.Value;
         var singleTestWorkers = (int)concurrentTestsNumericUpDown.Value;
+        var maximumRequestsPerSecond = (int)maxRequestsPerSecondNumericUpDown.Value;
+        var testMode = (StressTestMode)testModeComboBox.SelectedItem!;
         workflowStarted = null;
         workflowEnded = null;
         workflowEndpoint = endpoint;
@@ -127,10 +131,10 @@ public partial class Form1 : Form
         multiTestProgressBar.Value = 0;
         SetTestState(isRunning: true);
         remainingProgressBar.Visible = true;
+        var workflowCompleted = false;
 
         try
         {
-
 
             var firstWorkers = isMultiTest ? 0 : singleRequest ? 0 : singleTestWorkers;
             var maximumWorkers = isMultiTest ? NtpStressRunner.MaximumConcurrentWorkers : singleRequest ? 0 : singleTestWorkers;
@@ -144,7 +148,8 @@ public partial class Form1 : Form
                     break;
                 }
 
-                var result = await RunTestAsync(endpoint!, workers, duration, maximumRequests, singleRequest);
+                var showDrainState = !singleRequest && (!isMultiTest || workers == maximumWorkers);
+                var result = await RunTestAsync(endpoint!, workers, duration, maximumRequests, maximumRequestsPerSecond, testMode, singleRequest, showDrainState);
                 workflowResults.Add(result);
                 testEnded = result.Ended;
                 RefreshWorkflowResults();
@@ -160,9 +165,8 @@ public partial class Form1 : Form
 
                 await Task.Delay(TimeSpan.FromSeconds(1), testCancellation.Token);
             }
-            workflowEnded = testEnded;  // testing here   
-
-
+            workflowEnded = testEnded;
+            workflowCompleted = !testCancellation.IsCancellationRequested;
             RefreshWorkflowResults();
 
         }
@@ -182,10 +186,14 @@ public partial class Form1 : Form
             remainingProgressBar.Visible = false;
             multiTestProgressBar.Visible = false;
             SetTestState(isRunning: false);
+            if (workflowCompleted && !singleRequest)
+            {
+                System.Media.SystemSounds.Beep.Play();
+            }
         }
     }
 
-    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, TimeSpan duration, long maximumRequests, bool singleRequest)
+    private async Task<StressTestResult> RunTestAsync(NtpEndpoint endpoint, int workers, TimeSpan duration, long maximumRequests, int maximumRequestsPerSecond, StressTestMode testMode, bool singleRequest, bool showDrainState)
     {
         ResetResults();
         var testStarted = DateTime.Now;
@@ -194,14 +202,18 @@ public partial class Form1 : Form
 
         RefreshWorkflowResults();
 
-        var progress = new Progress<StressSnapshot>(UpdateResults);
+        var progress = new Progress<StressSnapshot>(snapshot => UpdateResults(snapshot, showDrainState));
         var snapshot = await Task.Run(() => new NtpStressRunner().RunAsync(
             endpoint,
             duration,
             workers,
             maximumRequests,
+            maximumRequestsPerSecond,
+            testMode,
             progress,
-            testCancellation!.Token));
+            testCancellation!.Token,
+            GracePeriodMilliseconds,
+            DrainPeriodTimeoutAfterLastReplyMilliseconds));
         var testEnded = DateTime.Now;
         UpdateResults(snapshot);
         return new StressTestResult(
@@ -213,10 +225,30 @@ public partial class Form1 : Form
             testEnded,
             snapshot.Elapsed,
             testCancellation!.IsCancellationRequested ? StressTestStatus.Stopped : StressTestStatus.Completed,
-            singleRequest);
+            singleRequest,
+            snapshot.ActualSentRequestCount,
+            snapshot.ActualAchievedSendsPerSecond,
+            snapshot.MaximumSchedulingLatenessMilliseconds,
+            maximumRequestsPerSecond,
+            snapshot.SendPhaseDuration,
+            snapshot.DrainPhaseDuration,
+            snapshot.MatchedResponses,
+            snapshot.UnmatchedResponses,
+            snapshot.DuplicateResponses,
+            snapshot.TimedOutOutstandingRequests,
+            snapshot.AverageSchedulingLatenessMilliseconds,
+            snapshot.SenderBlockedByOutstandingWindowDurationMilliseconds,
+            snapshot.TestMode,
+            snapshot.MinimumObservedInterSendGapMicroseconds,
+            snapshot.MaximumObservedInterSendGapMilliseconds,
+            snapshot.SendsViolatingMinimumGap,
+            snapshot.ScheduleRecoveryDurationMilliseconds,
+            snapshot.LostRequests,
+            snapshot.GracePeriodMilliseconds,
+            snapshot.RequiredDrainPeriodMilliseconds);
     }
 
-    private bool ConfirmPoolStressTest(string serverName)
+    private bool ConfirmExternalStressTest(string serverName)
     {
         using var warningDialog = new Form
         {
@@ -227,7 +259,7 @@ public partial class Form1 : Form
             MinimizeBox = false,
             ShowInTaskbar = false,
             StartPosition = FormStartPosition.CenterParent,
-            Text = "Time Server Pool Stress Test Warning"
+            Text = "External Time Server Stress Test Warning"
         };
         var warningLabel = new Label
         {
@@ -383,7 +415,9 @@ public partial class Form1 : Form
             serverAddressTextBox.Items.Cast<string>(),
             (int)ntpPortNumericUpDown.Value,
             (int)concurrentTestsNumericUpDown.Value,
-            (int)durationNumericUpDown.Value);
+            (int)durationNumericUpDown.Value,
+            (int)maxRequestsPerSecondNumericUpDown.Value,
+            (StressTestMode)testModeComboBox.SelectedItem!);
         base.OnFormClosing(e);
     }
 
@@ -394,28 +428,83 @@ public partial class Form1 : Form
 
     private void SaveResultsButton_Click(object? sender, EventArgs e)
     {
-        var generatedAt = DateTime.Now;
-        var completedAt = workflowResults[^1].Ended;
-        using var dialog = new SaveFileDialog
-        {
-            AddExtension = true,
-            DefaultExt = "pdf",
-            Filter = "PDF document (*.pdf)|*.pdf",
-            FileName = $"Time Server Stress Test Report {completedAt:yyyy-MM-dd HH-mm-ss}.pdf",
-            Title = "Save Results"
-        };
-
+        var savedSettings = UserPreferences.LoadReportSettings();
+        using var dialog = new CreateReportForm(Text, savedSettings);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
         }
 
+        var reportSettings = dialog.GetSettings() with
+        {
+            PdfReportPath = savedSettings.PdfReportPath,
+            CsvReportPath = savedSettings.CsvReportPath
+        };
+        var completedAt = workflowResults[^1].Ended;
+        var fileName = $"Time Server Stress Test Report {completedAt:yyyy-MM-dd HH-mm-ss}";
+        var pdfPath = reportSettings.CreatePdfReport
+            ? SelectReportPath(reportSettings.PdfReportPath, fileName + ".pdf", "PDF files (*.pdf)|*.pdf", "pdf")
+            : null;
+        if (reportSettings.CreatePdfReport && pdfPath is null)
+        {
+            return;
+        }
+
+        var csvPath = reportSettings.CreateCsvReport
+            ? SelectReportPath(reportSettings.CsvReportPath, fileName + ".csv", "CSV files (*.csv)|*.csv", "csv")
+            : null;
+        if (reportSettings.CreateCsvReport && csvPath is null)
+        {
+            return;
+        }
+
+        reportSettings = reportSettings with
+        {
+            PdfReportPath = pdfPath is null ? reportSettings.PdfReportPath : Path.GetDirectoryName(pdfPath)!,
+            CsvReportPath = csvPath is null ? reportSettings.CsvReportPath : Path.GetDirectoryName(csvPath)!
+        };
+
         try
         {
+            var generatedAt = DateTime.Now;
             var endpoint = workflowEndpoint ?? throw new InvalidOperationException("The tested time server details are unavailable.");
-            var chartJpeg = resultsChart.CreateJpeg(out var chartSize);
-            PdfReportExporter.Save(dialog.FileName, workflowResults, chartJpeg, chartSize, endpoint, generatedAt);
-            Process.Start(new ProcessStartInfo(dialog.FileName) { UseShellExecute = true });
+
+            if (csvPath is not null)
+                CsvReportExporter.Save(csvPath, workflowResults);
+
+            if (pdfPath is not null)
+            {
+                var chartJpeg = resultsChart.CreateJpeg(out var chartSize);
+                PdfReportExporter.Save(
+                    pdfPath,
+                    workflowResults,
+                    chartJpeg,
+                    chartSize,
+                    endpoint,
+                    generatedAt,
+                    reportSettings.Notes,
+                    workflowResults[0].TestMode,
+                    testDurationSeconds,
+                    (int)workflowResults[0].ConfiguredRequestsPerSecond);
+            }
+
+            // Once files are saved, optionally open them for viewing starting with the CSV report first so 
+            // that later when the PDF report is opened it will appear over of the CSV report
+
+            if (csvPath is not null && reportSettings.ViewCsvReportAfterCreation)
+                Process.Start(new ProcessStartInfo(csvPath) { UseShellExecute = true });
+
+
+            if (csvPath is not null && reportSettings.ViewCsvReportAfterCreation && pdfPath is not null && reportSettings.ViewPdfReportAfterCreation)
+                Thread.Sleep(2000);
+
+            if (pdfPath is not null && reportSettings.ViewPdfReportAfterCreation)
+            {
+                Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
+            }
+
+
+            UserPreferences.SaveReportSettings(reportSettings);
         }
         catch (Exception exception)
         {
@@ -423,26 +512,34 @@ public partial class Form1 : Form
         }
     }
 
-    private void ConfigureCurrentTestStatistics()
+    private string? SelectReportPath(string initialDirectory, string fileName, string filter, string extension)
     {
-        ConfigureStatistic(totalRequestsTitleLabel, totalRequestsValueLabel, "Total requests:", 28);
-        ConfigureStatistic(requestsPerSecondTitleLabel, requestsPerSecondValueLabel, "Requests per second:", 48);
-        ConfigureStatistic(successfulRequestsTitleLabel, successfulRequestsValueLabel, "Successful requests:", 68);
-        ConfigureStatistic(failedRequestsTitleLabel, failedRequestsValueLabel, "Failed requests:", 88);
+        using var dialog = new SaveFileDialog
+        {
+            AddExtension = true,
+            CheckPathExists = true,
+            DefaultExt = extension,
+            FileName = fileName,
+            Filter = filter,
+            InitialDirectory = Directory.Exists(initialDirectory) ? initialDirectory : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            OverwritePrompt = true
+        };
+        return dialog.ShowDialog(this) == DialogResult.OK ? dialog.FileName : null;
     }
 
-    private static void ConfigureStatistic(Label titleLabel, Label valueLabel, string title, int top)
+    private void UpdateResults(StressSnapshot snapshot, bool showDrainState = false)
     {
-        titleLabel.AutoSize = true;
-        titleLabel.Location = new Point(20, top);
-        titleLabel.Text = title;
-        valueLabel.AutoSize = true;
-        valueLabel.Location = new Point(190, top);
-        valueLabel.Text = "0";
-    }
+        if (showDrainState && snapshot.IsDraining)
+        {
+            stopButton.Enabled = false;
+            stopButton.Text = "Waiting for outstanding requests to complete";
+        }
+        else if (isTestRunning && testCancellation?.IsCancellationRequested is not true)
+        {
+            stopButton.Enabled = true;
+            stopButton.Text = "Stop testing";
+        }
 
-    private void UpdateResults(StressSnapshot snapshot)
-    {
         totalRequestsValueLabel.Text = snapshot.TotalRequests.ToString("N0");
         requestsPerSecondValueLabel.Text = snapshot.RequestsPerSecond.ToString("N0");
         successfulRequestsValueLabel.Text = $"{snapshot.SuccessfulRequests:N0} ({GetPercentage(snapshot.SuccessfulRequests, snapshot.TotalRequests):N2}%)";
@@ -472,10 +569,12 @@ public partial class Form1 : Form
         {
             ("workersColumn", "Concurrent Requests"),
             ("totalRequestsColumn", "Total Requests"),
-            ("requestsPerSecondColumn", "Requests / Second"),
+            ("requestsPerSecondColumn", "Requests/Second"),
             ("successesColumn", "Successes"),
             ("failuresColumn", "Failures"),
+            ("lossesColumn", "Losses"),
             ("successRateColumn", "Success Rate"),
+            ("successfulRequestsPerSecondColumn", "Successful Requests/Second"),
             ("startedColumn", "Started"),
             ("endedColumn", "Ended")
         })
@@ -523,7 +622,9 @@ public partial class Form1 : Form
                 result.IsSingleRequest ? "N/A" : result.RequestsPerSecond.ToString("N2"),
                 result.SuccessfulRequests.ToString("N0"),
                 result.FailedRequests.ToString("N0"),
+                result.LostRequests.ToString("N0"),
                 $"{result.SuccessRate:N2}%",
+                result.AdjustedSuccessfulRequestsPerSecond.ToString("N2"),
                 result.Started.ToString("G"),
                 result.Ended.ToString("G"));
         }
@@ -543,10 +644,13 @@ public partial class Form1 : Form
         serverAddressTextBox.Enabled = !isRunning;
         ntpPortNumericUpDown.Enabled = !isRunning;
         durationNumericUpDown.Enabled = !isRunning;
+        maxRequestsPerSecondNumericUpDown.Enabled = !isRunning;
+        testModeComboBox.Enabled = !isRunning;
         concurrentTestsNumericUpDown.Enabled = !isRunning;
         StartSingleTestButton.Enabled = !isRunning;
         StartSingleStressTestButton.Enabled = !isRunning;
         StartMultiStressTestButton.Enabled = !isRunning;
+        stopButton.Text = "Stop testing";
         stopButton.Enabled = isRunning;
         createReportButton.Enabled = !isRunning && workflowResults.Count > 0;
     }
@@ -572,4 +676,5 @@ public partial class Form1 : Form
         }
 
     }
+
 }

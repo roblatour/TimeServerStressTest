@@ -6,8 +6,9 @@ namespace TimeServerStressTest;
 
 public sealed class ResultsChart : Control
 {
-    private static readonly Color SuccessfulColor = Color.FromArgb(0, 96, 106);
+    private static readonly Color SuccessfulColor = Color.FromArgb(46, 125, 50);
     private static readonly Color FailedColor = Color.FromArgb(230, 126, 34);
+    private static readonly Color LostColor = Color.FromArgb(192, 57, 43);
     private IReadOnlyList<StressTestResult> results = Array.Empty<StressTestResult>();
 
     public ResultsChart()
@@ -74,6 +75,7 @@ public sealed class ResultsChart : Control
         using var axisPen = new Pen(Color.FromArgb(130, 140, 145));
         using var successfulBrush = new SolidBrush(SuccessfulColor);
         using var failedBrush = new SolidBrush(FailedColor);
+        using var lostBrush = new SolidBrush(LostColor);
 
         const int left = 72;
         const int top = 54;
@@ -86,8 +88,8 @@ public sealed class ResultsChart : Control
         }
 
         const int gridCount = 5;
-        var maximum = Math.Max(1d, results.Select(result => result.SuccessfulRequestsPerSecond + result.FailedRequestsPerSecond).DefaultIfEmpty().Max());
-        DrawLegend(graphics, successfulBrush, failedBrush, plot.Right - 210, bounds.Top + 12);
+        var maximum = Math.Max(1d, results.Select(result => result.SuccessfulRequests + result.FailedRequests + result.LostRequests).DefaultIfEmpty().Max());
+        DrawLegend(graphics, successfulBrush, failedBrush, lostBrush, plot.Right - 285, bounds.Top + 12);
 
         for (var index = 0; index <= gridCount; index++)
         {
@@ -105,7 +107,7 @@ public sealed class ResultsChart : Control
         graphics.DrawLine(axisPen, plot.Left, plot.Top, plot.Left, plot.Bottom);
         graphics.DrawLine(axisPen, plot.Left, plot.Bottom, plot.Right, plot.Bottom);
 
-        var yAxisLabel = "Requests / Second";
+        var yAxisLabel = "Total Requests";
         var yAxisLabelSize = graphics.MeasureString(yAxisLabel, Font);
         var graphicsState = graphics.Save();
         graphics.TranslateTransform(bounds.Left + 18, plot.Top + plot.Height / 2);
@@ -123,9 +125,11 @@ public sealed class ResultsChart : Control
                 graphics,
                 successfulBrush,
                 failedBrush,
+                lostBrush,
                 center - barWidth / 2,
-                result.SuccessfulRequestsPerSecond,
-                result.FailedRequestsPerSecond,
+                result.SuccessfulRequests,
+                result.FailedRequests,
+                result.LostRequests,
                 maximum,
                 plot,
                 barWidth);
@@ -143,28 +147,34 @@ public sealed class ResultsChart : Control
         graphics.DrawString(axisLabel, Font, axisBrush, plot.Left + (plot.Width - axisLabelSize.Width) / 2, bounds.Bottom - axisLabelSize.Height - 4);
     }
 
-    private void DrawLegend(Graphics graphics, Brush successfulBrush, Brush failedBrush, int left, int top)
+    private void DrawLegend(Graphics graphics, Brush successfulBrush, Brush failedBrush, Brush lostBrush, int left, int top)
     {
         graphics.FillRectangle(successfulBrush, left, top + 3, 12, 12);
         graphics.DrawString("Successful", Font, Brushes.Black, left + 17, top);
         graphics.FillRectangle(failedBrush, left + 105, top + 3, 12, 12);
-        graphics.DrawString("Unsuccessful", Font, Brushes.Black, left + 122, top);
+        graphics.DrawString("Failed", Font, Brushes.Black, left + 122, top);
+        graphics.FillRectangle(lostBrush, left + 180, top + 3, 12, 12);
+        graphics.DrawString("Lost", Font, Brushes.Black, left + 197, top);
     }
 
     private static void DrawStackedBar(
         Graphics graphics,
         Brush successfulBrush,
         Brush failedBrush,
+        Brush lostBrush,
         double left,
         double successfulValue,
         double failedValue,
+        double lostValue,
         double maximum,
         Rectangle plot,
         double width)
     {
         var successfulHeight = Math.Max(0, Math.Min(plot.Height, plot.Height * successfulValue / maximum));
         var failedHeight = Math.Max(0, Math.Min(plot.Height - successfulHeight, plot.Height * failedValue / maximum));
+        var lostHeight = Math.Max(0, Math.Min(plot.Height - successfulHeight - failedHeight, plot.Height * lostValue / maximum));
         graphics.FillRectangle(successfulBrush, (float)left, (float)(plot.Bottom - successfulHeight), (float)width, (float)successfulHeight);
         graphics.FillRectangle(failedBrush, (float)left, (float)(plot.Bottom - successfulHeight - failedHeight), (float)width, (float)failedHeight);
+        graphics.FillRectangle(lostBrush, (float)left, (float)(plot.Bottom - successfulHeight - failedHeight - lostHeight), (float)width, (float)lostHeight);
     }
 }
