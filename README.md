@@ -14,7 +14,7 @@ Based on configurable settings the application sends NTP requests to a selected 
 
 - Test an NTP server, identified by its IP address or host name, with a configurable UDP port.
 
-**Functional testing** (see [v2.1 release notes](https://github.com/roblatour/TimeServerStressTest/releases/tag/v2.0.0.0) for more details): 
+**Functional testing** (see [v2.1 release notes](https://github.com/roblatour/TimeServerStressTest/releases/tag/v2.1.0.0) for more details): 
 - **including all valid and available combinations of:**
 > - IPv4 / IPv6
 > - NTPv3 / NTPv4
