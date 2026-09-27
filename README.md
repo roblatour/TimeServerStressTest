@@ -35,7 +35,7 @@ Based on configurable settings the application sends NTP requests to a selected 
 **Along with:**
 - **Live results**: View various result in real time as the tests runs.
 -  **Save the final results** to either or both a:
-> - **report:** with your own notes examples (.pdf format) [(example multi stress test)](Misc/sample_sample_stress_test_report.pdf) [(example functional test)](Misc/sample_sample_functional_test_report.pdf)
+> - **report:** with your own notes examples (.pdf format) [(example multi stress test)](Misc/sample_stress_test_report.pdf) [(example functional test)](Misc/sample_functional_test_report.pdf)
 > - **csv file extract:** (for stress tests only) [(example multi stress test)](Misc/sample_stress_test.csv) - documented
     [here](Misc/Stress_Test_CSV_values.md) 
 
