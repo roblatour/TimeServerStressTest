@@ -63,7 +63,6 @@ public sealed class StressTestResultTests
         Assert.AreEqual(15d, result.SuccessfulRequestsPerSecond);
         Assert.AreEqual(5d, result.FailedRequestsPerSecond);
         Assert.AreEqual(75d, result.SuccessRate);
-        Assert.AreEqual(15d, result.SuccessfulRequestesPerSecond);
     }
 
     [TestMethod]
@@ -178,8 +177,7 @@ public sealed class NtpStressRunnerTests
         await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(3));
-        Assert.IsGreaterThan(0L, snapshot.TotalRequests);
-        Assert.IsLessThanOrEqualTo(maximumRequestsPerSecond, snapshot.TotalRequests);
+        Assert.AreEqual(maximumRequestsPerSecond, snapshot.TotalRequests);
         Assert.AreEqual(snapshot.TotalRequests, snapshot.SuccessfulRequests);
         Assert.AreEqual(0, snapshot.FailedRequests);
         Assert.AreEqual(TimeSpan.FromSeconds(1), snapshot.SendPhaseDuration);
@@ -681,7 +679,7 @@ public sealed class NtpStressRunnerTests
     public async Task RunAsync_SaturationMode_IsReportedAndCorrelatesReplies()
     {
         using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
-        const int requestCount = 4;
+        const int requestCount = 100;
         var responseTask = Task.Run(async () =>
         {
             for (var count = 0; count < requestCount; count++)
@@ -692,10 +690,11 @@ public sealed class NtpStressRunnerTests
         });
         var endpoint = new NtpEndpoint(IPAddress.Loopback.ToString(), ((IPEndPoint)server.Client.LocalEndPoint!).Port);
 
-        var snapshot = await new NtpStressRunner().RunAsync(endpoint, TimeSpan.FromSeconds(1), 1, requestCount, requestCount, StressTestMode.Saturation, new Progress<StressSnapshot>(), CancellationToken.None);
+        var snapshot = await new NtpStressRunner().RunAsync(endpoint, TimeSpan.FromSeconds(1), 0, 0, requestCount, StressTestMode.Saturation, new Progress<StressSnapshot>(), CancellationToken.None);
 
         await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.AreEqual(StressTestMode.Saturation, snapshot.TestMode);
+        Assert.AreEqual(requestCount, snapshot.ActualSentRequestCount);
         Assert.AreEqual(requestCount, snapshot.SuccessfulRequests);
         Assert.AreEqual(0, snapshot.FailedRequests);
     }
@@ -706,5 +705,131 @@ public sealed class NtpStressRunnerTests
         response[0] = 0x24;
         request.Slice(40, 8).CopyTo(response.AsSpan(24, 8));
         return response;
+    }
+}
+
+[TestClass]
+public sealed class NtpFunctionalTests
+{
+    private const string Secret = "5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e";
+
+    [TestMethod]
+    public void KeyFile_ValidMultipleKeys_DecodesHexSecret()
+    {
+        Assert.IsTrue(NtpKeyFile.TryParse($"1 SHA256 {Secret}\r\n\r\n65535 SHA256 {Secret}\n", out var keys));
+        Assert.HasCount(2, keys);
+        Assert.AreEqual(1, keys[0].Id);
+        Assert.AreEqual("V04ORr3XZwSzO06MUeObebAeJ3Yn0qyn", System.Text.Encoding.ASCII.GetString(keys[0].Value));
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("0 SHA256 5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e")]
+    [DataRow("65536 SHA256 5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e")]
+    [DataRow(" 1 SHA256 5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e")]
+    [DataRow("1  SHA256 5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e")]
+    [DataRow("1 SHA1 5630344f527233585a77537a4f30364d55654f62656241654a33596e3071796e")]
+    public void KeyFile_InvalidInput_IsRejected(string content)
+    {
+        Assert.IsFalse(NtpKeyFile.TryParse(content, out _));
+    }
+
+    [TestMethod]
+    public void AuthenticatedResponse_MustMatchIdAndDigest()
+    {
+        NtpKeyFile.TryParse($"1 SHA256 {Secret}", out var keys);
+        var request = NtpFunctionalRunner.CreateRequest(4);
+        var response = new byte[48];
+        response[0] = 0x24;
+        response[1] = 1;
+        request.AsSpan(40, 8).CopyTo(response.AsSpan(24, 8));
+        request.AsSpan(40, 8).CopyTo(response.AsSpan(40, 8));
+        var signed = NtpFunctionalRunner.ApplyAuthentication(response, keys[0]);
+        Assert.IsTrue(NtpFunctionalRunner.ValidResponse(signed, request, keys[0], true));
+        signed[^1] ^= 1;
+        Assert.IsFalse(NtpFunctionalRunner.ValidResponse(signed, request, keys[0], true));
+    }
+
+    [TestMethod]
+    public void InterleavedRequest_UsesPreviousExchangeTimestamps()
+    {
+        var first = NtpFunctionalRunner.CreateRequest(4);
+        var reply = new byte[48];
+        first.AsSpan(40, 8).CopyTo(reply.AsSpan(24, 8));
+        first.AsSpan(40, 8).CopyTo(reply.AsSpan(32, 8));
+        first.AsSpan(40, 8).CopyTo(reply.AsSpan(40, 8));
+        var second = NtpFunctionalRunner.CreateInterleavedRequest(first, reply);
+
+        Assert.IsTrue(second.AsSpan(24, 8).SequenceEqual(reply.AsSpan(32, 8)));
+        Assert.IsTrue(second.AsSpan(40, 8).SequenceEqual(first.AsSpan(40, 8)));
+        Assert.IsFalse(second.AsSpan(32, 8).SequenceEqual(new byte[8]));
+        var interleavedReply = new byte[48];
+        interleavedReply[0] = 0x24;
+        interleavedReply[1] = 1;
+        second.AsSpan(32, 8).CopyTo(interleavedReply.AsSpan(24, 8));
+        reply.AsSpan(40, 8).CopyTo(interleavedReply.AsSpan(40, 8));
+        Assert.IsTrue(NtpFunctionalRunner.ValidResponse(interleavedReply, second, null, false, reply));
+        interleavedReply[40] ^= 1;
+        Assert.IsFalse(NtpFunctionalRunner.ValidResponse(interleavedReply, second, null, false, reply));
+    }
+
+    [TestMethod]
+    [DataRow("192.168.1.10", AddressFamily.InterNetwork, true)]
+    [DataRow("169.254.1.1", AddressFamily.InterNetwork, false)]
+    [DataRow("127.0.0.1", AddressFamily.InterNetwork, false)]
+    [DataRow("2001:db8::1", AddressFamily.InterNetworkV6, true)]
+    [DataRow("fd00::1", AddressFamily.InterNetworkV6, true)]
+    [DataRow("fe80::1", AddressFamily.InterNetworkV6, false)]
+    [DataRow("::1", AddressFamily.InterNetworkV6, false)]
+    public void UsableAddress_RequiresRoutableAddressOfRequestedFamily(string value, AddressFamily family, bool expected)
+    {
+        Assert.AreEqual(expected, NtpFunctionalRunner.HasUsableAddress([IPAddress.Parse(value)], family));
+    }
+
+    [TestMethod]
+    [DataRow(true, false, 9, "IPv4", "IPv4")]
+    [DataRow(false, true, 9, "IPv6", "IPv6")]
+    [DataRow(true, true, 18, "IPv4", "IPv6")]
+    public void SelectedTestNames_IncludeOnlyConnectedFamilies(bool ipv4, bool ipv6, int count, string firstFamily, string lastFamily)
+    {
+        var families = new List<AddressFamily>();
+        if (ipv4)
+        {
+            families.Add(AddressFamily.InterNetwork);
+        }
+
+        if (ipv6)
+        {
+            families.Add(AddressFamily.InterNetworkV6);
+        }
+
+        var names = NtpFunctionalRunner.GetTestNames(families);
+        Assert.HasCount(count, names);
+        StringAssert.StartsWith(names[0], firstFamily);
+        StringAssert.StartsWith(names[^1], lastFamily);
+    }
+
+    [TestMethod]
+    public void FunctionalPdf_ContainsResultTableButNotStressChart()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            var when = new DateTime(2026, 9, 27);
+            PdfReportExporter.SaveFunctional(path,
+                [new FunctionalTestResult("IPv4 NTPv3 Standard", FunctionalTestStatus.Pass), new FunctionalTestResult("IPv4 NTPv4 Standard", FunctionalTestStatus.Fail)],
+                new NtpEndpoint("localhost", 123), when, when.AddSeconds(1), "Test note");
+            var pdf = System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(path));
+            StringAssert.Contains(pdf, "NTP Functional Test Results");
+            StringAssert.Contains(pdf, "IPv4 NTPv4 Standard");
+            StringAssert.Contains(pdf, "36 510 Td (1)");
+            StringAssert.Contains(pdf, "36 490 Td (2)");
+            StringAssert.Contains(pdf, "Time Server Port: 123");
+            Assert.IsFalse(pdf.Contains("/Im0", StringComparison.Ordinal));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 }

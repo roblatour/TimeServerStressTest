@@ -463,7 +463,6 @@ public sealed class NtpStressRunner
         async Task ScheduleRequestsAsync(int workerIndex)
         {
             var schedule = new NtpRequestSchedule(Stopwatch.GetTimestamp, startTimestamp, Stopwatch.Frequency, maximumRequestsPerSecond);
-            var sendWindowEndTimestamp = startTimestamp + duration.Ticks * Stopwatch.Frequency / TimeSpan.TicksPerSecond;
             foreach (var requestNumber in GetRequestNumbersForWorker(totalRequests, workerCount, workerIndex))
             {
                 var sendTiming = await WaitForSendTimestampAsync(requestNumber).ConfigureAwait(false);
@@ -473,11 +472,6 @@ public sealed class NtpStressRunner
                 }
 
                 var (scheduledTimestamp, actualTimestamp, previousSendTimestamp) = sendTiming.Value;
-                if (maximumRequests == 0 && actualTimestamp >= sendWindowEndTimestamp)
-                {
-                    break;
-                }
-
                 var latenessStopwatchTicks = Math.Max(0, actualTimestamp - scheduledTimestamp);
                 UpdateMaximum(ref maximumSchedulingLatenessStopwatchTicks, latenessStopwatchTicks);
                 Interlocked.Add(ref totalSchedulingLatenessStopwatchTicks, latenessStopwatchTicks);
@@ -520,18 +514,8 @@ public sealed class NtpStressRunner
                 if (testMode == StressTestMode.Saturation)
                 {
                     var saturationDueTimestamp = schedule.GetDueTimestamp(requestNumber);
-                    if (maximumRequests == 0 && saturationDueTimestamp >= sendWindowEndTimestamp)
-                    {
-                        return null;
-                    }
-
                     await DelayUntilStopwatchTimestampAsync(saturationDueTimestamp, cancellationToken).ConfigureAwait(false);
                     var actualTimestamp = Stopwatch.GetTimestamp();
-                    if (maximumRequests == 0 && actualTimestamp >= sendWindowEndTimestamp)
-                    {
-                        return null;
-                    }
-
                     var previousSendTimestamp = Interlocked.Exchange(ref lastGlobalSendTimestamp, actualTimestamp);
                     return (saturationDueTimestamp, actualTimestamp, previousSendTimestamp);
                 }
@@ -540,18 +524,8 @@ public sealed class NtpStressRunner
                 {
                     var previousSendTimestamp = Interlocked.Read(ref lastGlobalSendTimestamp);
                     var pacedDueTimestamp = schedule.GetPacedDueTimestamp(requestNumber, previousSendTimestamp);
-                    if (maximumRequests == 0 && pacedDueTimestamp >= sendWindowEndTimestamp)
-                    {
-                        return null;
-                    }
-
                     await DelayUntilStopwatchTimestampAsync(pacedDueTimestamp, cancellationToken).ConfigureAwait(false);
                     var actualTimestamp = Stopwatch.GetTimestamp();
-                    if (maximumRequests == 0 && actualTimestamp >= sendWindowEndTimestamp)
-                    {
-                        return null;
-                    }
-
                     if (Interlocked.CompareExchange(ref lastGlobalSendTimestamp, actualTimestamp, previousSendTimestamp) == previousSendTimestamp)
                     {
                         return (pacedDueTimestamp, actualTimestamp, previousSendTimestamp);

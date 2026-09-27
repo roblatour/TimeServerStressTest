@@ -24,6 +24,17 @@ internal static class UserPreferences
 
     public static StressTestMode LoadStressTestMode() => LoadSettings().StressTestMode;
 
+    public static (string Path, int[] KeyIds, int SelectedKeyId) LoadKeySelection()
+    {
+        var settings = LoadSettings();
+        return (settings.KeyFilePath, settings.KeyIds ?? [], settings.SelectedKeyId);
+    }
+
+    public static void SaveKeySelection(string path, IEnumerable<int> keyIds, int selectedKeyId)
+    {
+        SaveSettings(LoadSettings() with { KeyFilePath = path, KeyIds = keyIds.ToArray(), SelectedKeyId = selectedKeyId });
+    }
+
     public static ReportSettings LoadReportSettings()
     {
         var settings = LoadSettings();
@@ -96,7 +107,10 @@ internal static class UserPreferences
                 settings?.ViewCsvReportAfterCreation ?? true,
                 GetValidDirectory(settings?.PdfReportPath),
                 GetValidDirectory(settings?.CsvReportPath),
-                settings?.StressTestMode is StressTestMode.Saturation ? StressTestMode.Saturation : StressTestMode.Paced);
+                settings?.StressTestMode is StressTestMode.Saturation ? StressTestMode.Saturation : StressTestMode.Paced,
+                settings?.KeyFilePath ?? string.Empty,
+                settings?.KeyIds ?? [],
+                settings?.SelectedKeyId ?? 0);
         }
         catch (IOException)
         {
@@ -158,5 +172,8 @@ internal static class UserPreferences
         bool ViewCsvReportAfterCreation = true,
         string PdfReportPath = "",
         string CsvReportPath = "",
-        StressTestMode StressTestMode = StressTestMode.Paced);
+        StressTestMode StressTestMode = StressTestMode.Paced,
+        string KeyFilePath = "",
+        int[]? KeyIds = null,
+        int SelectedKeyId = 0);
 }

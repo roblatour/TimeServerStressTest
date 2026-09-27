@@ -1,27 +1,43 @@
-# Time Server Stress Test (Version 2 - 2026-09-13)
+# Time Server Stress Test (Version 2.1 - 2026-09-27)
 
 ## OVERVIEW
 
-Time Server Stress Test is a Windows desktop utility for authorized stress testing of NTP time servers on private networks.
+Time Server Stress Test is a Windows desktop utility for authorized testing of NTP time servers on private networks.
 
-Based on configurable settings the application sends concurrent UDP NTPv4 requests to a selected server, reports testing results in real time, and optionally creates a report in .pdf format and .csv extract file.
+Based on configurable settings the application sends NTP requests to a selected server, reports testing results in real time, and optionally creates a report in .pdf format and .csv extract file.
 
 ![Screenshot](/Misc/screenshot.jpg)
 
 ## KEY FEATURES
 
-- **NTP endpoint support**: Test an IP address or host name with a configurable UDP port `123` used by default.
-- **Configurable:**
+**Provides for functional and stress NTP server testing:**
+
+- Test an NTP server, identified by its IP address or host name, with a configurable UDP port.
+
+**Functional testing** (see [v2.1 release notes](https://github.com/roblatour/TimeServerStressTest/releases/tag/v2.0.0.0) for more details): 
+- **including all valid and available combinations of:**
+> - IPv4 / IPv6
+> - NTPv3 / NTPv4
+> - standard / interleaved / authenticated (symmetric-key) requests 
+> 
+- Plus a mini stress test (100 NTPv4 standard requests saturated within one second)
+
+- corrected stress tests not accounting for the trailing tests in some cases
+
+**Stress Testing:**
+- **including (configurable):**
 > - **Test duration**
 > - **Max requests/second**
 > - **Concurrent requests** 
 > - **Test mode:** (Paced or Saturated)
 > - **Test type:** run a single test (one NTP request only); a single stress test; or multiple stress tests automatically one after the other.
+
+**Along with:**
 - **Live results**: View various result in real time as the tests runs.
 -  **Save the final results** to either or both a:
-> - **report:** with your own notes [example](Misc/sample_report.pdf) (.pdf format)
-> - **csv file extract:** [example](Misc/sample_report.csv) - documented
-    [here](Misc/Stress_Test_CSV_values.md)
+> - **report:** with your own notes examples (.pdf format) [(example multi stress test)](Misc/sample_sample_stress_test_report.pdf) [(example functional test)](Misc/sample_sample_functional_test_report.pdf)
+> - **csv file extract:** (for stress tests only) [(example multi stress test)](Misc/sample_stress_test.csv) - documented
+    [here](Misc/Stress_Test_CSV_values.md) 
 
 
 ## GETTING STARTED
@@ -57,7 +73,7 @@ may get a Windows security alert
    
 6. (Optionally for Single tests) Specify the number of concurrent tests that should be run (or use the default)
    
-7. Click either **Start a single test**, **Start a single stress test** or **Start multiple stress tests"** and if prompted the **Confirm** button to confirm that you are authorized to test the server
+7. Click either ***Start a single test**, **Start functional testing** ,**Start a single stress test** or **Start multiple stress tests"** and if prompted the **Confirm** button to confirm that you are authorized to test the server
 
 8. Review the live test results, or select **Stop** to end the test early
    

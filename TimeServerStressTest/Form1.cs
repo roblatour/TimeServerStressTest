@@ -18,10 +18,14 @@ public partial class Form1 : Form
     private NtpEndpoint? workflowEndpoint;
     private bool suppressStressTestWarning;
     private string lastServerAddress = "";
+    private string keyFilePath = "";
+    private IReadOnlyList<SymmetricKey> symmetricKeys = [];
+    private readonly List<FunctionalTestResult> functionalResults = [];
+    private bool functionalWorkflow;
 
-    const string warningMessage = "Use this application only to stress test internal time servers which you are authorized to stress test.\r\n\r\n" +
-        "Stress testing external time servers or public time-server pools will most likely cause your external IP address to be blocked or banned.\r\n\r\n" +
-        "Stress testing internal time servers or internal time server pools may also cause your machine's internal IP address to be blocked or banned.\r\n\r\n" +
+    const string warningMessage = "Use this application only to test internal time servers which you are authorized to test.\r\n\r\n" +
+        "Testing external time servers or public time-server pools will most likely cause your external IP address to be blocked or banned.\r\n\r\n" +
+        "Testing internal time servers or internal time server pools may also cause your machine's internal IP address to be blocked or banned.\r\n\r\n" +
         "Continue only if you are authorized to stress test this time server and know that doing so will not cause your machine's IP address or external address to be blocked or banned.";
 
     public Form1()
@@ -40,6 +44,15 @@ public partial class Form1 : Form
         remainingProgressBar.Visible = false;
         multiTestProgressBar.Visible = false;
         ResetResults();
+        var savedKey = UserPreferences.LoadKeySelection();
+        if (TryLoadKeys(savedKey.Path))
+        {
+            PopulateKeys(savedKey.Path, symmetricKeys.Any(key => key.Id == savedKey.SelectedKeyId) ? savedKey.SelectedKeyId : symmetricKeys[0].Id);
+        }
+        else
+        {
+            ClearKeys();
+        }
     }
 
     protected override void OnShown(EventArgs e)
@@ -91,6 +104,119 @@ public partial class Form1 : Form
         await StartWorkflowAsync(isMultiTest: true, singleRequest: false);
     }
 
+    private async void StartFunctionalTestingButton_Click(object? sender, EventArgs e)
+    {
+        if (!NtpEndpoint.TryParse(serverAddressTextBox.Text, (int)ntpPortNumericUpDown.Value, out var endpoint))
+        {
+            MessageBox.Show(this, "Enter a valid host name or IP address + port.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            serverAddressTextBox.Focus();
+            return;
+        }
+
+        var families = NtpFunctionalRunner.GetAvailableFamilies();
+        if (families.Count == 0)
+        {
+            MessageBox.Show(this, "No active IPv4 or IPv6 network connection is available.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var plannedTests = NtpFunctionalRunner.GetTestNames(families);
+        var external = endpoint!.Host.Contains("pool", StringComparison.OrdinalIgnoreCase) ||
+            await NetworkAddressScope.ResolvesToExternalAddressAsync(endpoint.Host, CancellationToken.None);
+        if (external ? !ConfirmExternalStressTest(endpoint.Host) : !ConfirmStressTest())
+        {
+            return;
+        }
+
+        AddServerAddressToHistory(serverAddressTextBox.Text);
+        functionalWorkflow = true;
+        workflowEndpoint = endpoint;
+        workflowStarted = DateTime.Now;
+        workflowEnded = null;
+        workflowResults.Clear();
+        functionalResults.Clear();
+        ResetResults();
+        resultsChart.Results = [];
+        resultsDataGridView.Columns.Clear();
+        resultsDataGridView.Columns.Add("functionalNumber", "No.");
+        resultsDataGridView.Columns.Add("functionalName", "Functional test");
+        resultsDataGridView.Columns.Add("functionalStatus", "Result");
+        resultsDataGridView.Columns[0].FillWeight = 40;
+        resultsDataGridView.Columns[1].FillWeight = 350;
+        resultsDataGridView.Columns[2].FillWeight = 100;
+        resultsDataGridView.Rows.Clear();
+        chartGroupBox.Visible = false;
+        SetFunctionalResultsLayout(true);
+        remainingProgressBar.Maximum = plannedTests.Count;
+        remainingProgressBar.Value = 0;
+        remainingProgressBar.Visible = true;
+        multiTestProgressBar.Visible = false;
+        isTestRunning = true;
+        testCancellation = new CancellationTokenSource();
+        var cancellation = testCancellation;
+        SetTestState(true);
+        workflowTimingLabel.Text = $"Testing started: {workflowStarted:G}";
+        var completed = false;
+        try
+        {
+            var key = symmetricKeys.FirstOrDefault(item => item.Id == (KeyIDComboBox.SelectedItem as int?));
+            var progress = new Progress<FunctionalTestResult>(result =>
+            {
+                if (!isTestRunning || testCancellation != cancellation || cancellation.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                functionalResults.Add(result);
+                var row = resultsDataGridView.Rows.Add(functionalResults.Count, result.Name, result.Status switch
+                {
+                    FunctionalTestStatus.Pass => "Pass",
+                    FunctionalTestStatus.Fail => "Fail",
+                    _ => "Could not run"
+                });
+                resultsDataGridView.Rows[row].Cells[2].Style.ForeColor = result.Status switch
+                {
+                    FunctionalTestStatus.Pass => Color.Green,
+                    FunctionalTestStatus.Fail => Color.Red,
+                    _ => Color.DarkGoldenrod
+                };
+                remainingProgressBar.Value = functionalResults.Count;
+            });
+            await new NtpFunctionalRunner().RunAsync(endpoint, key, families, progress, testCancellation.Token);
+            await Task.Yield();
+            completed = true;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(this, exception.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            isTestRunning = false;
+            workflowEnded = DateTime.Now;
+            workflowTimingLabel.Text = $"Testing started: {workflowStarted:G}    Ended: {workflowEnded:G}";
+            if (!completed)
+            {
+                functionalResults.Clear();
+                resultsDataGridView.Rows.Clear();
+            }
+
+            testCancellation?.Dispose();
+            testCancellation = null;
+            remainingProgressBar.Value = 0;
+            remainingProgressBar.Visible = false;
+            SetTestState(false);
+            createReportButton.Enabled = completed && functionalResults.Count == plannedTests.Count;
+            if (completed)
+            {
+                System.Media.SystemSounds.Beep.Play();
+            }
+        }
+    }
+
     private async Task StartWorkflowAsync(bool isMultiTest, bool singleRequest)
     {
         if (!NtpEndpoint.TryParse(serverAddressTextBox.Text, (int)ntpPortNumericUpDown.Value, out var endpoint))
@@ -116,6 +242,14 @@ public partial class Form1 : Form
         }
 
         AddServerAddressToHistory(serverAddressTextBox.Text);
+        if (functionalWorkflow)
+        {
+            functionalWorkflow = false;
+            chartGroupBox.Visible = true;
+            SetFunctionalResultsLayout(false);
+            resultsDataGridView.Columns.Clear();
+            ConfigureResultsTable();
+        }
         testDurationSeconds = singleRequest ? 2 : (int)durationNumericUpDown.Value;
         var singleTestWorkers = (int)concurrentTestsNumericUpDown.Value;
         var maximumRequestsPerSecond = (int)maxRequestsPerSecondNumericUpDown.Value;
@@ -259,7 +393,7 @@ public partial class Form1 : Form
             MinimizeBox = false,
             ShowInTaskbar = false,
             StartPosition = FormStartPosition.CenterParent,
-            Text = "External Time Server Stress Test Warning"
+            Text = "External Time Server Test Warning"
         };
         var warningLabel = new Label
         {
@@ -329,7 +463,7 @@ public partial class Form1 : Form
             MinimizeBox = false,
             ShowInTaskbar = false,
             StartPosition = FormStartPosition.CenterParent,
-            Text = "Time Server Stress Test Warning"
+            Text = "Time Server Test Warning"
         };
         var warningLabel = new Label
         {
@@ -429,7 +563,7 @@ public partial class Form1 : Form
     private void SaveResultsButton_Click(object? sender, EventArgs e)
     {
         var savedSettings = UserPreferences.LoadReportSettings();
-        using var dialog = new CreateReportForm(Text, savedSettings);
+        using var dialog = new CreateReportForm(Text, savedSettings, functionalWorkflow);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -440,8 +574,8 @@ public partial class Form1 : Form
             PdfReportPath = savedSettings.PdfReportPath,
             CsvReportPath = savedSettings.CsvReportPath
         };
-        var completedAt = workflowResults[^1].Ended;
-        var fileName = $"Time Server Stress Test Report {completedAt:yyyy-MM-dd HH-mm-ss}";
+        var completedAt = functionalWorkflow ? workflowEnded!.Value : workflowResults[^1].Ended;
+        var fileName = $"Time Server {(functionalWorkflow ? "Functional" : "Stress")} Test Report {completedAt:yyyy-MM-dd HH-mm-ss}";
         var pdfPath = reportSettings.CreatePdfReport
             ? SelectReportPath(reportSettings.PdfReportPath, fileName + ".pdf", "PDF files (*.pdf)|*.pdf", "pdf")
             : null;
@@ -450,10 +584,10 @@ public partial class Form1 : Form
             return;
         }
 
-        var csvPath = reportSettings.CreateCsvReport
+        var csvPath = !functionalWorkflow && reportSettings.CreateCsvReport
             ? SelectReportPath(reportSettings.CsvReportPath, fileName + ".csv", "CSV files (*.csv)|*.csv", "csv")
             : null;
-        if (reportSettings.CreateCsvReport && csvPath is null)
+        if (!functionalWorkflow && reportSettings.CreateCsvReport && csvPath is null)
         {
             return;
         }
@@ -472,7 +606,11 @@ public partial class Form1 : Form
             if (csvPath is not null)
                 CsvReportExporter.Save(csvPath, workflowResults);
 
-            if (pdfPath is not null)
+            if (pdfPath is not null && functionalWorkflow)
+            {
+                PdfReportExporter.SaveFunctional(pdfPath, functionalResults, endpoint, workflowStarted!.Value, workflowEnded!.Value, reportSettings.Notes);
+            }
+            else if (pdfPath is not null)
             {
                 var chartJpeg = resultsChart.CreateJpeg(out var chartSize);
                 PdfReportExporter.Save(
@@ -551,6 +689,13 @@ public partial class Form1 : Form
     private void ResetResults()
     {
         UpdateResults(new StressSnapshot(0, 0, 0, 0, TimeSpan.FromSeconds(testDurationSeconds)));
+    }
+
+    private void SetFunctionalResultsLayout(bool isFunctional)
+    {
+        summaryGroupBox.Bounds = isFunctional
+            ? new Rectangle(27, 427, 1047, 566)
+            : new Rectangle(27, 730, 1047, 263);
     }
 
     private void ConfigureResultsTable()
@@ -650,6 +795,9 @@ public partial class Form1 : Form
         StartSingleTestButton.Enabled = !isRunning;
         StartSingleStressTestButton.Enabled = !isRunning;
         StartMultiStressTestButton.Enabled = !isRunning;
+        StartFunctionalTestingButton.Enabled = !isRunning;
+        SetSymmetricKeyButton.Enabled = !isRunning;
+        KeyIDComboBox.Enabled = !isRunning && KeyIDComboBox.Items.Count > 1;
         stopButton.Text = "Stop testing";
         stopButton.Enabled = isRunning;
         createReportButton.Enabled = !isRunning && workflowResults.Count > 0;
@@ -677,4 +825,79 @@ public partial class Form1 : Form
 
     }
 
+    private bool TryLoadKeys(string path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !NtpKeyFile.TryParse(File.ReadAllText(path), out var keys))
+            {
+                return false;
+            }
+
+            symmetricKeys = keys;
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private void PopulateKeys(string path, int selectedId)
+    {
+        keyFilePath = path;
+        KeyIDComboBox.Items.Clear();
+        KeyIDComboBox.Items.AddRange(symmetricKeys.Select(key => (object)key.Id).ToArray());
+        KeyIDComboBox.SelectedItem = selectedId;
+        KeyIDComboBox.Enabled = KeyIDComboBox.Items.Count > 1;
+        UserPreferences.SaveKeySelection(keyFilePath, symmetricKeys.Select(key => key.Id), selectedId);
+    }
+
+    private void ClearKeys()
+    {
+        keyFilePath = string.Empty;
+        symmetricKeys = [];
+        KeyIDComboBox.Items.Clear();
+        KeyIDComboBox.Enabled = false;
+        UserPreferences.SaveKeySelection(string.Empty, [], 0);
+    }
+
+    private void button1_Click(object sender, EventArgs e)
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Filter = "NTP key files (ntp.keys)|ntp.keys|All files (*.*)|*.*",
+            InitialDirectory = Directory.Exists(Path.GetDirectoryName(keyFilePath)) ? Path.GetDirectoryName(keyFilePath) : @"C:\Program Files (x86)\NTP\etc",
+            FileName = "ntp.keys",
+            CheckFileExists = true
+        };
+        while (true)
+        {
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                ClearKeys();
+                return;
+            }
+
+            if (TryLoadKeys(dialog.FileName))
+            {
+                PopulateKeys(dialog.FileName, symmetricKeys[0].Id);
+                return;
+            }
+
+            MessageBox.Show(this, "Invalid key file", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void KeyIDComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (KeyIDComboBox.SelectedItem is int id && keyFilePath.Length > 0)
+        {
+            UserPreferences.SaveKeySelection(keyFilePath, symmetricKeys.Select(key => key.Id), id);
+        }
+    }
 }

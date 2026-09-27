@@ -14,7 +14,7 @@ internal sealed partial class CreateReportForm : Form
     private readonly string customDictionaryPath;
     private readonly Uri customDictionaryUri;
 
-    public CreateReportForm(string title, UserPreferences.ReportSettings settings)
+    public CreateReportForm(string title, UserPreferences.ReportSettings settings, bool functional = false)
     {
         InitializeComponent();
         customDictionaryPath = Path.Combine(
@@ -33,6 +33,14 @@ internal sealed partial class CreateReportForm : Form
         viewCsvReportCheckBox.Checked = settings.ViewCsvReportAfterCreation;
         UpdateViewReportOptions();
         spellCheckedNotesTextBox.Text = settings.Notes;
+        if (functional)
+        {
+            createPdfReportCheckBox.Checked = true;
+            createPdfReportCheckBox.Enabled = false;
+            createCsvReportCheckBox.Visible = false;
+            viewCsvReportCheckBox.Visible = false;
+            viewPdfReportCheckBox.Enabled = true;
+        }
     }
 
     public UserPreferences.ReportSettings GetSettings() => new(spellCheckedNotesTextBox.Text, createPdfReportCheckBox.Checked, createCsvReportCheckBox.Checked, viewPdfReportCheckBox.Checked, viewCsvReportCheckBox.Checked, string.Empty, string.Empty);

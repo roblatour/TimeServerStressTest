@@ -1,0 +1,87 @@
+%PDF-1.4
+%????
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 1850 >>
+stream
+BT /F1 14 Tf 36 576 Td (NTP Functional Test Results for 192.168.1.214) Tj ET
+BT /F1 10 Tf 36 548 Td (Functional tests) Tj ET
+BT /F1 9 Tf 36 528 Td (No.) Tj ET
+BT /F1 9 Tf 72 528 Td (Test) Tj ET
+BT /F1 9 Tf 410 528 Td (Result) Tj ET
+BT /F1 9 Tf 36 510 Td (1) Tj ET
+BT /F1 9 Tf 72 510 Td (IPv4 NTPv3 Standard) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 510 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 490 Td (2) Tj ET
+BT /F1 9 Tf 72 490 Td (IPv4 NTPv4 Standard) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 490 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 470 Td (3) Tj ET
+BT /F1 9 Tf 72 470 Td (IPv4 NTPv4 Interleaved) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 470 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 450 Td (4) Tj ET
+BT /F1 9 Tf 72 450 Td (IPv4 NTPv4 Symmetric-key standard) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 450 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 430 Td (5) Tj ET
+BT /F1 9 Tf 72 430 Td (IPv4 NTPv4 Symmetric-key interleaved) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 430 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 410 Td (6) Tj ET
+BT /F1 9 Tf 72 410 Td (IPv4 NTPv4 Invalid symmetric-key) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 410 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 390 Td (7) Tj ET
+BT /F1 9 Tf 72 390 Td (IPv4 NTPv4 Missing symmetric-key) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 390 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 370 Td (8) Tj ET
+BT /F1 9 Tf 72 370 Td (IPv4 NTPv4 Truncated MAC) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 370 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 36 350 Td (9) Tj ET
+BT /F1 9 Tf 72 350 Td (IPv4 NTPv4 Mini saturated stress test) Tj ET
+0 0.5 0 rg
+BT /F1 9 Tf 410 350 Td (Pass) Tj ET
+0 0 0 rg
+BT /F1 8 Tf 36 318 Td (Notes:) Tj ET
+BT /F1 8 Tf 36 306 Td (Tested against ESP32TimeServer running on a Waveshare ESP32-P4-WIFI6-POE-ETH) Tj ET
+BT /F1 8 Tf 36 34 Td (Time Server Port: 123) Tj ET
+BT /F1 8 Tf 36 20 Td (Tests started: 2026-09-27 3:41:09 PM    Ended: 2026-09-27 3:41:20 PM) Tj ET
+
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 4 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+5 0 obj
+<< /Type /Catalog /Pages 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000001987 00000 n 
+0000002113 00000 n 
+0000002170 00000 n 
+trailer
+<< /Size 6 /Root 5 0 R >>
+startxref
+2219
+%%EOF

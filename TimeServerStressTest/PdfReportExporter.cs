@@ -13,9 +13,93 @@ public static class PdfReportExporter
     public static void Save(string path, IReadOnlyList<StressTestResult> results, byte[] chartJpeg, Size chartSize, NtpEndpoint endpoint, DateTime generatedAt, string notes, StressTestMode testMode, int testDurationSeconds, int maximumRequestsPerSecond)
     {
         var pages = CreatePages(results, endpoint, generatedAt, notes, testMode, testDurationSeconds, maximumRequestsPerSecond);
+        WritePdf(path, pages, chartJpeg, chartSize);
+    }
+
+    internal static void SaveFunctional(string path, IReadOnlyList<FunctionalTestResult> results, NtpEndpoint endpoint, DateTime started, DateTime ended, string notes)
+    {
+        var pages = new List<string>();
+        var content = new StringBuilder();
+        AddText(content, 36, 576, 14, "NTP Functional Test Results for " + endpoint.Host);
+        AddText(content, 36, 548, 10, "Functional tests");
+        AddText(content, 36, 528, 9, "No.");
+        AddText(content, 72, 528, 9, "Test");
+        AddText(content, 410, 528, 9, "Result");
+        var y = 510;
+        for (var index = 0; index < results.Count; index++)
+        {
+            var result = results[index];
+            if (y < 100)
+            {
+                pages.Add(content.ToString());
+                content = new StringBuilder();
+                AddText(content, 36, 576, 14, "NTP Functional Test Results");
+                AddText(content, 36, 548, 9, "No.");
+                AddText(content, 72, 548, 9, "Test");
+                AddText(content, 410, 548, 9, "Result");
+                y = 530;
+            }
+
+            AddText(content, 36, y, 9, (index + 1).ToString(CultureInfo.InvariantCulture));
+            AddText(content, 72, y, 9, result.Name);
+            var color = result.Status switch
+            {
+                FunctionalTestStatus.Pass => "0 0.5 0",
+                FunctionalTestStatus.Fail => "0.85 0 0",
+                _ => "0.65 0.5 0"
+            };
+            content.Append(color).Append(" rg\n");
+            AddText(content, 410, y, 9, result.Status switch
+            {
+                FunctionalTestStatus.Pass => "Pass",
+                FunctionalTestStatus.Fail => "Fail",
+                _ => "Could not run"
+            });
+            content.Append("0 0 0 rg\n");
+            y -= 20;
+        }
+
+        var lines = notes.Replace("\r\n", "\n").Replace('\r', '\n')
+            .Split('\n').SelectMany(line => line.Length == 0 ? new[] { "" } : line.Chunk(95).Select(chars => new string(chars))).ToArray();
+        if (!string.IsNullOrWhiteSpace(notes))
+        {
+            if (y - (lines.Length + 1) * 12 < 70)
+            {
+                pages.Add(content.ToString());
+                content = new StringBuilder();
+                AddText(content, 36, 576, 14, "NTP Functional Test Results");
+                y = 548;
+            }
+            y -= 12;
+            AddText(content, 36, y, 8, "Notes:");
+            foreach (var line in lines)
+            {
+                y -= 12;
+                if (y < 64)
+                {
+                    pages.Add(content.ToString());
+                    content = new StringBuilder();
+                    AddText(content, 36, 576, 14, "NTP Functional Test Results");
+                    y = 548;
+                }
+                AddText(content, 36, y, 8, line);
+            }
+        }
+
+        AddText(content, 36, 34, 8, $"Time Server Port: {endpoint.Port}");
+        AddText(content, 36, 20, 8, $"Tests started: {started:G}    Ended: {ended:G}");
+        pages.Add(content.ToString());
+        WritePdf(path, pages, null, default);
+    }
+
+    private static void WritePdf(string path, IReadOnlyList<string> pages, byte[]? chartJpeg, Size chartSize)
+    {
         var objects = new List<byte[]>();
         objects.Add(Encoding.ASCII.GetBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"));
-        objects.Add(CreateStreamObject($"<< /Type /XObject /Subtype /Image /Width {chartSize.Width} /Height {chartSize.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {chartJpeg.Length} >>", chartJpeg));
+        if (chartJpeg is not null)
+        {
+            objects.Add(CreateStreamObject($"<< /Type /XObject /Subtype /Image /Width {chartSize.Width} /Height {chartSize.Height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {chartJpeg.Length} >>", chartJpeg));
+        }
 
         var pageObjectNumbers = new List<int>();
         for (var index = 0; index < pages.Count; index++)
@@ -24,7 +108,7 @@ public static class PdfReportExporter
             objects.Add(CreateStreamObject($"<< /Length {Encoding.ASCII.GetByteCount(pages[index])} >>", Encoding.ASCII.GetBytes(pages[index])));
             var pageObjectNumber = objects.Count + 1;
             pageObjectNumbers.Add(pageObjectNumber);
-            var resources = index == 0
+            var resources = index == 0 && chartJpeg is not null
                 ? $"<< /Font << /F1 {FontObjectNumber} 0 R >> /XObject << /Im0 {ImageObjectNumber} 0 R >> >>"
                 : $"<< /Font << /F1 {FontObjectNumber} 0 R >> >>";
             objects.Add(Encoding.ASCII.GetBytes($"<< /Type /Page /Parent {{PAGES}} 0 R /MediaBox [0 0 {PageWidth} {PageHeight}] /Resources {resources} /Contents {contentObjectNumber} 0 R >>"));

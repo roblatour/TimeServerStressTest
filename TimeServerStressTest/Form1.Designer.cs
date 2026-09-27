@@ -49,14 +49,6 @@ partial class Form1
     private void InitializeComponent()
     {
         contentPanel = new Panel();
-        groupBox5 = new GroupBox();
-        createReportButton = new Button();
-        groupBox4 = new GroupBox();
-        serverAddressLabel = new Label();
-        serverAddressTextBox = new ComboBox();
-        ntpPortNumericUpDown = new NumericUpDown();
-        ntpPortLabel = new Label();
-        groupBox3 = new GroupBox();
         groupBox7 = new GroupBox();
         groupBox2 = new GroupBox();
         label1 = new Label();
@@ -71,6 +63,16 @@ partial class Form1
         maxRequestsPerSecondNumericUpDown = new IncrementNumericUpDown();
         durationLabel = new Label();
         durationNumericUpDown = new NumericUpDown();
+        groupBox5 = new GroupBox();
+        createReportButton = new Button();
+        groupBox8 = new GroupBox();
+        SetSymmetricKeyButton = new Button();
+        StartFunctionalTestingButton = new Button();
+        groupBox4 = new GroupBox();
+        serverAddressLabel = new Label();
+        serverAddressTextBox = new ComboBox();
+        ntpPortNumericUpDown = new NumericUpDown();
+        ntpPortLabel = new Label();
         groupBox6 = new GroupBox();
         StartSingleTestButton = new Button();
         closeButton = new Button();
@@ -92,17 +94,19 @@ partial class Form1
         workflowTimingLabel = new Label();
         summaryGroupBox = new GroupBox();
         resultsDataGridView = new DataGridView();
+        KeyIDComboBox = new ComboBox();
+        label2 = new Label();
         contentPanel.SuspendLayout();
-        groupBox5.SuspendLayout();
-        groupBox4.SuspendLayout();
-        ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).BeginInit();
-        groupBox3.SuspendLayout();
         groupBox7.SuspendLayout();
         groupBox2.SuspendLayout();
         groupBox1.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).BeginInit();
         (maxRequestsPerSecondNumericUpDown).BeginInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).BeginInit();
+        groupBox5.SuspendLayout();
+        groupBox8.SuspendLayout();
+        groupBox4.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).BeginInit();
         groupBox6.SuspendLayout();
         resultsGroupBox.SuspendLayout();
         chartGroupBox.SuspendLayout();
@@ -113,9 +117,11 @@ partial class Form1
         // contentPanel
         // 
         contentPanel.AutoScroll = true;
+        contentPanel.Controls.Add(groupBox7);
         contentPanel.Controls.Add(groupBox5);
+        contentPanel.Controls.Add(groupBox8);
         contentPanel.Controls.Add(groupBox4);
-        contentPanel.Controls.Add(groupBox3);
+        contentPanel.Controls.Add(groupBox6);
         contentPanel.Controls.Add(closeButton);
         contentPanel.Controls.Add(helpButton);
         contentPanel.Controls.Add(resultsGroupBox);
@@ -128,91 +134,6 @@ partial class Form1
         contentPanel.Size = new Size(1094, 1040);
         contentPanel.TabIndex = 0;
         // 
-        // groupBox5
-        // 
-        groupBox5.Controls.Add(createReportButton);
-        groupBox5.Location = new Point(918, 12);
-        groupBox5.Name = "groupBox5";
-        groupBox5.Size = new Size(155, 191);
-        groupBox5.TabIndex = 22;
-        groupBox5.TabStop = false;
-        groupBox5.Text = "Create Report";
-        // 
-        // createReportButton
-        // 
-        createReportButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        createReportButton.Enabled = false;
-        createReportButton.Location = new Point(19, 146);
-        createReportButton.Name = "createReportButton";
-        createReportButton.Size = new Size(120, 30);
-        createReportButton.TabIndex = 16;
-        createReportButton.Text = "Create Reports";
-        createReportButton.UseVisualStyleBackColor = true;
-        createReportButton.Click += SaveResultsButton_Click;
-        // 
-        // groupBox4
-        // 
-        groupBox4.Controls.Add(serverAddressLabel);
-        groupBox4.Controls.Add(serverAddressTextBox);
-        groupBox4.Controls.Add(ntpPortNumericUpDown);
-        groupBox4.Controls.Add(ntpPortLabel);
-        groupBox4.Location = new Point(27, 12);
-        groupBox4.Name = "groupBox4";
-        groupBox4.Size = new Size(230, 168);
-        groupBox4.TabIndex = 21;
-        groupBox4.TabStop = false;
-        groupBox4.Text = "Time Server Identification";
-        // 
-        // serverAddressLabel
-        // 
-        serverAddressLabel.AutoSize = true;
-        serverAddressLabel.Location = new Point(15, 28);
-        serverAddressLabel.Name = "serverAddressLabel";
-        serverAddressLabel.Size = new Size(200, 15);
-        serverAddressLabel.TabIndex = 0;
-        serverAddressLabel.Text = "Time server host name or IP address:";
-        // 
-        // serverAddressTextBox
-        // 
-        serverAddressTextBox.FormattingEnabled = true;
-        serverAddressTextBox.Location = new Point(15, 46);
-        serverAddressTextBox.Name = "serverAddressTextBox";
-        serverAddressTextBox.Size = new Size(200, 23);
-        serverAddressTextBox.Sorted = true;
-        serverAddressTextBox.TabIndex = 1;
-        serverAddressTextBox.SelectedIndexChanged += serverAddressTextBox_SelectedIndexChanged;
-        serverAddressTextBox.KeyDown += ServerAddressComboBox_KeyDown;
-        // 
-        // ntpPortNumericUpDown
-        // 
-        ntpPortNumericUpDown.Location = new Point(15, 102);
-        ntpPortNumericUpDown.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
-        ntpPortNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-        ntpPortNumericUpDown.Name = "ntpPortNumericUpDown";
-        ntpPortNumericUpDown.Size = new Size(90, 23);
-        ntpPortNumericUpDown.TabIndex = 3;
-        ntpPortNumericUpDown.TextAlign = HorizontalAlignment.Right;
-        ntpPortNumericUpDown.Value = new decimal(new int[] { 123, 0, 0, 0 });
-        // 
-        // ntpPortLabel
-        // 
-        ntpPortLabel.AutoSize = true;
-        ntpPortLabel.Location = new Point(15, 82);
-        ntpPortLabel.Name = "ntpPortLabel";
-        ntpPortLabel.Size = new Size(32, 15);
-        ntpPortLabel.TabIndex = 2;
-        ntpPortLabel.Text = "Port:";
-        // 
-        // groupBox3
-        // 
-        groupBox3.Controls.Add(groupBox7);
-        groupBox3.Controls.Add(groupBox6);
-        groupBox3.Location = new Point(271, 12);
-        groupBox3.Name = "groupBox3";
-        groupBox3.Size = new Size(633, 197);
-        groupBox3.TabIndex = 20;
-        groupBox3.TabStop = false;
-        // 
         // groupBox7
         // 
         groupBox7.Controls.Add(groupBox2);
@@ -223,7 +144,7 @@ partial class Form1
         groupBox7.Controls.Add(maxRequestsPerSecondNumericUpDown);
         groupBox7.Controls.Add(durationLabel);
         groupBox7.Controls.Add(durationNumericUpDown);
-        groupBox7.Location = new Point(137, 14);
+        groupBox7.Location = new Point(422, 21);
         groupBox7.Name = "groupBox7";
         groupBox7.Size = new Size(490, 177);
         groupBox7.TabIndex = 21;
@@ -305,7 +226,7 @@ partial class Form1
         // testModeLabel
         // 
         testModeLabel.AutoSize = true;
-        testModeLabel.Location = new Point(246, 49);
+        testModeLabel.Location = new Point(246, 25);
         testModeLabel.Name = "testModeLabel";
         testModeLabel.Size = new Size(65, 15);
         testModeLabel.TabIndex = 7;
@@ -316,7 +237,7 @@ partial class Form1
         testModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         testModeComboBox.FormattingEnabled = true;
         testModeComboBox.Items.AddRange(new object[] { StressTestMode.Paced, StressTestMode.Saturation });
-        testModeComboBox.Location = new Point(335, 46);
+        testModeComboBox.Location = new Point(335, 22);
         testModeComboBox.Name = "testModeComboBox";
         testModeComboBox.Size = new Size(141, 23);
         testModeComboBox.TabIndex = 8;
@@ -324,7 +245,7 @@ partial class Form1
         // maxRequestsPerSecondLabel
         // 
         maxRequestsPerSecondLabel.AutoSize = true;
-        maxRequestsPerSecondLabel.Location = new Point(246, 22);
+        maxRequestsPerSecondLabel.Location = new Point(11, 49);
         maxRequestsPerSecondLabel.Name = "maxRequestsPerSecondLabel";
         maxRequestsPerSecondLabel.Size = new Size(122, 15);
         maxRequestsPerSecondLabel.TabIndex = 6;
@@ -332,11 +253,11 @@ partial class Form1
         // 
         // maxRequestsPerSecondNumericUpDown
         // 
-        maxRequestsPerSecondNumericUpDown.Location = new Point(384, 20);
+        maxRequestsPerSecondNumericUpDown.Location = new Point(155, 46);
         maxRequestsPerSecondNumericUpDown.Maximum = new decimal(new int[] { 50000, 0, 0, 0 });
         maxRequestsPerSecondNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
         maxRequestsPerSecondNumericUpDown.Name = "maxRequestsPerSecondNumericUpDown";
-        maxRequestsPerSecondNumericUpDown.Size = new Size(92, 23);
+        maxRequestsPerSecondNumericUpDown.Size = new Size(67, 23);
         maxRequestsPerSecondNumericUpDown.TabIndex = 6;
         maxRequestsPerSecondNumericUpDown.TextAlign = HorizontalAlignment.Right;
         maxRequestsPerSecondNumericUpDown.Value = new decimal(new int[] { 1000, 0, 0, 0 });
@@ -361,12 +282,122 @@ partial class Form1
         durationNumericUpDown.TextAlign = HorizontalAlignment.Right;
         durationNumericUpDown.Value = new decimal(new int[] { 15, 0, 0, 0 });
         // 
+        // groupBox5
+        // 
+        groupBox5.Controls.Add(createReportButton);
+        groupBox5.Location = new Point(918, 12);
+        groupBox5.Name = "groupBox5";
+        groupBox5.Size = new Size(155, 186);
+        groupBox5.TabIndex = 22;
+        groupBox5.TabStop = false;
+        groupBox5.Text = "Create Report";
+        // 
+        // createReportButton
+        // 
+        createReportButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        createReportButton.Enabled = false;
+        createReportButton.Location = new Point(19, 141);
+        createReportButton.Name = "createReportButton";
+        createReportButton.Size = new Size(120, 30);
+        createReportButton.TabIndex = 16;
+        createReportButton.Text = "Create Reports";
+        createReportButton.UseVisualStyleBackColor = true;
+        createReportButton.Click += SaveResultsButton_Click;
+        // 
+        // groupBox8
+        // 
+        groupBox8.Controls.Add(label2);
+        groupBox8.Controls.Add(KeyIDComboBox);
+        groupBox8.Controls.Add(SetSymmetricKeyButton);
+        groupBox8.Controls.Add(StartFunctionalTestingButton);
+        groupBox8.Location = new Point(263, 21);
+        groupBox8.Name = "groupBox8";
+        groupBox8.Size = new Size(153, 172);
+        groupBox8.TabIndex = 22;
+        groupBox8.TabStop = false;
+        groupBox8.Text = "Functional Testing";
+        // 
+        // SetSymmetricKeyButton
+        // 
+        SetSymmetricKeyButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        SetSymmetricKeyButton.Location = new Point(6, 27);
+        SetSymmetricKeyButton.Name = "SetSymmetricKeyButton";
+        SetSymmetricKeyButton.Size = new Size(141, 30);
+        SetSymmetricKeyButton.TabIndex = 11;
+        SetSymmetricKeyButton.Text = "Set symmetric-key";
+        SetSymmetricKeyButton.UseVisualStyleBackColor = true;
+        SetSymmetricKeyButton.Click += button1_Click;
+        // 
+        // StartFunctionalTestingButton
+        // 
+        StartFunctionalTestingButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        StartFunctionalTestingButton.Location = new Point(6, 130);
+        StartFunctionalTestingButton.Name = "StartFunctionalTestingButton";
+        StartFunctionalTestingButton.Size = new Size(141, 30);
+        StartFunctionalTestingButton.TabIndex = 10;
+        StartFunctionalTestingButton.Text = "Start functional testing";
+        StartFunctionalTestingButton.UseVisualStyleBackColor = true;
+        StartFunctionalTestingButton.Click += StartFunctionalTestingButton_Click;
+        // 
+        // groupBox4
+        // 
+        groupBox4.Controls.Add(serverAddressLabel);
+        groupBox4.Controls.Add(serverAddressTextBox);
+        groupBox4.Controls.Add(ntpPortNumericUpDown);
+        groupBox4.Controls.Add(ntpPortLabel);
+        groupBox4.Location = new Point(27, 12);
+        groupBox4.Name = "groupBox4";
+        groupBox4.Size = new Size(230, 115);
+        groupBox4.TabIndex = 21;
+        groupBox4.TabStop = false;
+        groupBox4.Text = "Time Server Identification";
+        // 
+        // serverAddressLabel
+        // 
+        serverAddressLabel.AutoSize = true;
+        serverAddressLabel.Location = new Point(15, 23);
+        serverAddressLabel.Name = "serverAddressLabel";
+        serverAddressLabel.Size = new Size(200, 15);
+        serverAddressLabel.TabIndex = 0;
+        serverAddressLabel.Text = "Time server host name or IP address:";
+        // 
+        // serverAddressTextBox
+        // 
+        serverAddressTextBox.FormattingEnabled = true;
+        serverAddressTextBox.Location = new Point(15, 41);
+        serverAddressTextBox.Name = "serverAddressTextBox";
+        serverAddressTextBox.Size = new Size(200, 23);
+        serverAddressTextBox.Sorted = true;
+        serverAddressTextBox.TabIndex = 1;
+        serverAddressTextBox.SelectedIndexChanged += serverAddressTextBox_SelectedIndexChanged;
+        serverAddressTextBox.KeyDown += ServerAddressComboBox_KeyDown;
+        // 
+        // ntpPortNumericUpDown
+        // 
+        ntpPortNumericUpDown.Location = new Point(15, 85);
+        ntpPortNumericUpDown.Maximum = new decimal(new int[] { 65535, 0, 0, 0 });
+        ntpPortNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+        ntpPortNumericUpDown.Name = "ntpPortNumericUpDown";
+        ntpPortNumericUpDown.Size = new Size(90, 23);
+        ntpPortNumericUpDown.TabIndex = 3;
+        ntpPortNumericUpDown.TextAlign = HorizontalAlignment.Right;
+        ntpPortNumericUpDown.Value = new decimal(new int[] { 123, 0, 0, 0 });
+        // 
+        // ntpPortLabel
+        // 
+        ntpPortLabel.AutoSize = true;
+        ntpPortLabel.Location = new Point(15, 67);
+        ntpPortLabel.Name = "ntpPortLabel";
+        ntpPortLabel.Size = new Size(32, 15);
+        ntpPortLabel.TabIndex = 2;
+        ntpPortLabel.Text = "Port:";
+        // 
         // groupBox6
         // 
         groupBox6.Controls.Add(StartSingleTestButton);
-        groupBox6.Location = new Point(10, 14);
+        groupBox6.Location = new Point(30, 131);
         groupBox6.Name = "groupBox6";
-        groupBox6.Size = new Size(121, 172);
+        groupBox6.Size = new Size(230, 62);
         groupBox6.TabIndex = 20;
         groupBox6.TabStop = false;
         groupBox6.Text = "Single Test";
@@ -374,9 +405,9 @@ partial class Form1
         // StartSingleTestButton
         // 
         StartSingleTestButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        StartSingleTestButton.Location = new Point(6, 132);
+        StartSingleTestButton.Location = new Point(15, 20);
         StartSingleTestButton.Name = "StartSingleTestButton";
-        StartSingleTestButton.Size = new Size(109, 30);
+        StartSingleTestButton.Size = new Size(200, 30);
         StartSingleTestButton.TabIndex = 9;
         StartSingleTestButton.Text = "Start a single test";
         StartSingleTestButton.UseVisualStyleBackColor = true;
@@ -588,6 +619,27 @@ partial class Form1
         resultsDataGridView.Size = new Size(1041, 241);
         resultsDataGridView.TabIndex = 0;
         // 
+        // KeyIDComboBox
+        // 
+        KeyIDComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        KeyIDComboBox.Enabled = false;
+        KeyIDComboBox.FormattingEnabled = true;
+        KeyIDComboBox.Location = new Point(78, 67);
+        KeyIDComboBox.Name = "KeyIDComboBox";
+        KeyIDComboBox.Size = new Size(69, 23);
+        KeyIDComboBox.Sorted = true;
+        KeyIDComboBox.TabIndex = 12;
+        KeyIDComboBox.SelectedIndexChanged += KeyIDComboBox_SelectedIndexChanged;
+        // 
+        // label2
+        // 
+        label2.AutoSize = true;
+        label2.Location = new Point(6, 70);
+        label2.Name = "label2";
+        label2.Size = new Size(43, 15);
+        label2.TabIndex = 13;
+        label2.Text = "Key ID:";
+        // 
         // Form1
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
@@ -599,11 +651,6 @@ partial class Form1
         StartPosition = FormStartPosition.CenterScreen;
         contentPanel.ResumeLayout(false);
         contentPanel.PerformLayout();
-        groupBox5.ResumeLayout(false);
-        groupBox4.ResumeLayout(false);
-        groupBox4.PerformLayout();
-        ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).EndInit();
-        groupBox3.ResumeLayout(false);
         groupBox7.ResumeLayout(false);
         groupBox7.PerformLayout();
         groupBox2.ResumeLayout(false);
@@ -613,6 +660,12 @@ partial class Form1
         ((System.ComponentModel.ISupportInitialize)concurrentTestsNumericUpDown).EndInit();
         (maxRequestsPerSecondNumericUpDown).EndInit();
         ((System.ComponentModel.ISupportInitialize)durationNumericUpDown).EndInit();
+        groupBox5.ResumeLayout(false);
+        groupBox8.ResumeLayout(false);
+        groupBox8.PerformLayout();
+        groupBox4.ResumeLayout(false);
+        groupBox4.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)ntpPortNumericUpDown).EndInit();
         groupBox6.ResumeLayout(false);
         resultsGroupBox.ResumeLayout(false);
         resultsGroupBox.PerformLayout();
@@ -648,7 +701,6 @@ partial class Form1
 
     private Button closeButton;
     private GroupBox groupBox1;
-    private GroupBox groupBox3;
     private GroupBox groupBox2;
     private GroupBox groupBox4;
     private Label label1;
@@ -658,4 +710,9 @@ partial class Form1
     private GroupBox groupBox7;
     private Label testModeLabel;
     private ComboBox testModeComboBox;
+    private GroupBox groupBox8;
+    private Button StartFunctionalTestingButton;
+    private Button SetSymmetricKeyButton;
+    private Label label2;
+    private ComboBox KeyIDComboBox;
 }
